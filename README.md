@@ -1,6 +1,26 @@
 # Unithon Team13
 
-보내기 전 메시지를 LLM으로 다듬어주는 맥/윈도우 프로그램의 AI 파이프라인.
+보내기 전 메시지를 LLM으로 다듬어주는 맥/윈도우 프로그램.
+
+## macOS 메뉴바 앱
+
+메뉴바에 상주하는 아이콘을 클릭하면 팝업에서 메시지를 입력하고 다듬은 결과를 바로 복사할 수 있다.
+
+```bash
+cd macos-app
+./build-app.sh          # swift build -c release + .app 번들 생성
+open dist/MessageRefiner.app
+```
+
+- 첫 실행 시 팝업 상단에 Gemini API 키 입력 ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) — 한 번 저장하면 UserDefaults에 유지
+- 모드: 교정 / 톤(존댓말·반말·비즈니스·친근함) / 요약
+- `⌘ + Enter`로 다듬기, 결과는 클립보드 복사 버튼으로 복사
+- 종료: 팝업 하단 "종료" 버튼
+- 테스트: `swift run RefinerTests` (macos-app 디렉터리)
+
+## Python AI 파이프라인
+
+macOS 앱과 동일한 로직의 Python 구현체 (CLI 테스트·라이브러리 용도).
 
 ## 구조
 

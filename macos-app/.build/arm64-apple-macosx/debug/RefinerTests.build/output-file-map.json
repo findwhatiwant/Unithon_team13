@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/primary.swiftdeps"
+  },
+  "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerTests/main.swift": {
+    "dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.d",
+    "object": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.swift.o",
+    "swiftmodule": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.swiftdeps",
+    "diagnostics": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.dia"
+  }
+}

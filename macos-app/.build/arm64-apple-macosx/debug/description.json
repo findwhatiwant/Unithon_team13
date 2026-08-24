@@ -1,0 +1,706 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.MenuBarApp-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/sources",
+      "importPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/PopoverView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/RefinerApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerCore.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "MenuBarApp",
+      "moduleOutputPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/MenuBarApp.swiftmodule",
+      "objects" : [
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.swift.o",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "MenuBarApp_main",
+        "-swift-version",
+        "5",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos_app"
+      ],
+      "outputFileMapPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/MenuBarApp.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/PopoverView.swift",
+        "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/RefinerApp.swift"
+      ],
+      "tempsPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.RefinerCore-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/sources",
+      "importPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/APIKeyStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/GeminiClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Models.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Prompts.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/RefineViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "RefinerCore",
+      "moduleOutputPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerCore.swiftmodule",
+      "objects" : [
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/APIKeyStore.swift.o",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/GeminiClient.swift.o",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Models.swift.o",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Prompts.swift.o",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/RefineViewModel.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/include/RefinerCore-Swift.h",
+        "-swift-version",
+        "5",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos_app"
+      ],
+      "outputFileMapPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/APIKeyStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/GeminiClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Models.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Prompts.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/RefineViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerCore.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/APIKeyStore.swift",
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/GeminiClient.swift",
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Models.swift",
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Prompts.swift",
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/RefineViewModel.swift"
+      ],
+      "tempsPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.RefinerTests-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/sources",
+      "importPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerTests/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerCore.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "RefinerTests",
+      "moduleOutputPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerTests.swiftmodule",
+      "objects" : [
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "RefinerTests_main",
+        "-swift-version",
+        "5",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos_app"
+      ],
+      "outputFileMapPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules/RefinerTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerTests/main.swift"
+      ],
+      "tempsPath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "MenuBarApp" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "MenuBarApp",
+      "-package-name",
+      "macos_app",
+      "-c",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/PopoverView.swift",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/RefinerApp.swift",
+      "-I",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "MenuBarApp_main",
+      "-swift-version",
+      "5",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos_app",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ],
+    "RefinerCore" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "RefinerCore",
+      "-package-name",
+      "macos_app",
+      "-c",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/APIKeyStore.swift",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/GeminiClient.swift",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Models.swift",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Prompts.swift",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/RefineViewModel.swift",
+      "-I",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/include/RefinerCore-Swift.h",
+      "-swift-version",
+      "5",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos_app",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ],
+    "RefinerTests" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "RefinerTests",
+      "-package-name",
+      "macos_app",
+      "-c",
+      "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerTests/main.swift",
+      "-I",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "RefinerTests_main",
+      "-swift-version",
+      "5",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos_app",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "MenuBarApp" : [
+      "RefinerCore"
+    ],
+    "RefinerCore" : [
+
+    ],
+    "RefinerTests" : [
+      "RefinerCore"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/PopoverView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/RefinerApp.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/sources"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/APIKeyStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/GeminiClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Models.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/Prompts.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerCore/RefineViewModel.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/sources"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerMenu-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerMenu-entitlement.plist"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerMenu.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/APIKeyStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/GeminiClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Models.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Prompts.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/RefineViewModel.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerMenu.product/Objects.LinkFileList"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests-entitlement.plist"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/Sources/RefinerTests/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/sources"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/APIKeyStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/GeminiClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Models.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/Prompts.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerCore.build/RefineViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/RefinerTests.product/Objects.LinkFileList"
+    },
+    "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+    }
+  }
+}

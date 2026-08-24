@@ -1,0 +1,19 @@
+{
+  "": {
+    "swift-dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/primary.swiftdeps"
+  },
+  "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/PopoverView.swift": {
+    "dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.d",
+    "object": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.swift.o",
+    "swiftmodule": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView~partial.swiftmodule",
+    "swift-dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.swiftdeps",
+    "diagnostics": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/PopoverView.dia"
+  },
+  "/Users/woosik/programming/Unithon/macos-app/Sources/MenuBarApp/RefinerApp.swift": {
+    "dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.d",
+    "object": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.swift.o",
+    "swiftmodule": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.swiftdeps",
+    "diagnostics": "/Users/woosik/programming/Unithon/macos-app/.build/arm64-apple-macosx/debug/MenuBarApp.build/RefinerApp.dia"
+  }
+}

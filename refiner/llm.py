@@ -14,7 +14,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.6-flash",
         max_retries: int = 2,
     ):
         from google import genai
@@ -34,11 +34,8 @@ class GeminiClient:
         last_error: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
-                response = self._client.models.generate_content(
-                    model=self._model,
-                    contents=user,
-                    config=config,
-                )
+                chat = self._client.chats.create(model=self._model, config=config)
+                response = chat.send_message(user)
                 return response.text or ""
             except Exception as exc:
                 last_error = exc
