@@ -1,0 +1,26 @@
+[project]
+name = "message-refiner"
+version = "0.1.0"
+description = "LLM 기반 메시지 다듬기 AI 파이프라인"
+requires-python = ">=3.10"
+dependencies = [
+    "google-genai>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+refine = "refiner.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["refiner"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
