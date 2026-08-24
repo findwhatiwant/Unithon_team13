@@ -23,16 +23,15 @@ struct PopoverView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            if viewModel.mode == .tone {
-                Picker("톤", selection: $viewModel.tone) {
-                    Text("선택").tag(Tone?.none)
-                    ForEach(Tone.allCases) { tone in
-                        Text(tone.label).tag(Tone?.some(tone))
-                    }
+            Picker("톤", selection: $viewModel.tone) {
+                Text("선택").tag(Tone?.none)
+                ForEach(Tone.allCases) { tone in
+                    Text(tone.label).tag(Tone?.some(tone))
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .disabled(viewModel.mode != .tone)
 
             TextField("상황·받는 사람 (선택)", text: $viewModel.contextInput)
                 .textFieldStyle(.roundedBorder)
@@ -57,37 +56,37 @@ struct PopoverView: View {
                 }
             }
 
-            HStack {
-                Button {
-                    Task { await viewModel.refine() }
-                } label: {
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("다듬기")
-                            .frame(maxWidth: .infinity)
-                    }
+            Button {
+                Task { await viewModel.refine() }
+            } label: {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Text("다듬기")
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(viewModel.isLoading || viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.hasAPIKey)
-                .keyboardShortcut(.return, modifiers: .command)
-
-                Spacer(minLength: 0)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(viewModel.isLoading || viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !viewModel.hasAPIKey)
+            .keyboardShortcut(.return, modifiers: .command)
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-                    .fixedSize(horizontal: false, vertical: true)
+            ZStack {
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
+            .frame(maxWidth: .infinity, minHeight: 30, maxHeight: 30, alignment: .topLeading)
 
-            if let result = viewModel.result {
-                resultSection(result)
-            }
+            resultCard
+
+            Spacer(minLength: 0)
 
             Divider()
 
@@ -105,7 +104,7 @@ struct PopoverView: View {
             }
         }
         .padding(14)
-        .frame(width: 340)
+        .frame(width: 340, height: 570)
     }
 
     private var apiKeySection: some View {
@@ -127,7 +126,7 @@ struct PopoverView: View {
         .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private func resultSection(_ result: RefineResult) -> some View {
+    private var resultCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("결과").font(.caption).foregroundStyle(.secondary)
@@ -138,30 +137,47 @@ struct PopoverView: View {
                 .font(.caption)
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(viewModel.copied)
+                .disabled(viewModel.copied || viewModel.result == nil)
             }
 
-            ScrollView {
-                Text(result.refinedText)
-                    .textSelection(.enabled)
-                    .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxHeight: 110)
-            .padding(8)
-            .background(Color.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            if let result = viewModel.result {
+                ScrollView {
+                    Text(result.refinedText)
+                        .textSelection(.enabled)
+                        .font(.system(size: 13))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: 120)
+                .padding(8)
+                .background(Color.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
 
-            if !result.changes.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(result.changes, id: \.self) { change in
-                        HStack(alignment: .top, spacing: 4) {
-                            Text("•")
-                            Text(change).fixedSize(horizontal: false, vertical: true)
+                Group {
+                    if result.changes.isEmpty {
+                        Text("")
+                    } else {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(result.changes, id: \.self) { change in
+                                HStack(alignment: .top, spacing: 4) {
+                                    Text("•")
+                                    Text(change).fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
                         }
                     }
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .frame(height: 40, alignment: .top)
+                .clipped()
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.05))
+                    Text(viewModel.isLoading ? "다듬는 중..." : "결과가 여기에 표시됩니다")
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                }
+                .frame(height: 120)
             }
         }
     }
