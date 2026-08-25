@@ -56,6 +56,10 @@ struct MainDocumentView: View {
 
     @FocusState private var editorFocused: Bool
     @State private var itemFrames: [Int: CGRect] = [:]
+    @State private var showReportScreen = false
+    @State private var report: MagicNoteClient.Report?
+    @State private var reportLoading = false
+    @State private var reportError: String?
 
     private let client = MagicNoteClient()
 
@@ -95,20 +99,19 @@ struct MainDocumentView: View {
         }
         .frame(minWidth: 720, idealWidth: 780, minHeight: 560, idealHeight: 640)
         .background(
-            ZStack(alignment: .bottomTrailing) {
-                ZStack {
-                    frameBg
-                    Circle().fill(burgundy.opacity(0.07)).blur(radius: 60).frame(width: 260).position(x: 60, y: 60)
-                    Circle().fill(navy.opacity(0.08)).blur(radius: 60).frame(width: 300).position(x: 600, y: 480)
-                }
-                .ignoresSafeArea()
-
-                // 리포트 받기 — 우하단 아이콘 버튼
-                reportFab
-                    .padding(.trailing, 24)
-                    .padding(.bottom, 24)
+            ZStack {
+                frameBg
+                Circle().fill(burgundy.opacity(0.07)).blur(radius: 60).frame(width: 260).position(x: 60, y: 60)
+                Circle().fill(navy.opacity(0.08)).blur(radius: 60).frame(width: 300).position(x: 600, y: 480)
             }
+            .ignoresSafeArea()
         )
+        // 리포트 받기 — 우하단 아이콘 버튼 (콘텐츠 위에 떠 있어야 클릭 가능)
+        .overlay(alignment: .bottomTrailing) {
+            reportFab
+                .padding(.trailing, 24)
+                .padding(.bottom, 24)
+        }
     }
 
     // MARK: - 헤더
@@ -371,6 +374,231 @@ struct MainDocumentView: View {
 
     @ViewBuilder
     private var resultColumn: some View {
+        if showReportScreen {
+            reportScreen
+        } else {
+            resultsScroll
+        }
+    }
+
+    /// 리포트 화면
+    private var reportScreen: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { showReportScreen = false }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.black.opacity(0.5))
+                        .frame(width: 26, height: 26)
+                        .background(RoundedRectangle(cornerRadius: 7).fill(Color.black.opacity(0.05)))
+                }
+                .buttonStyle(PressableButtonStyle())
+
+                Text("나의 말투 리포트")
+                    .font(.pretendard(14, .bold))
+                    .foregroundStyle(Color.black.opacity(0.82))
+
+                Spacer()
+
+                Button {
+                    loadReport()
+                } label: {
+                    Text(report == nil ? "리포트 생성" : "갱신")
+                        .font(.pretendard(10.5, .semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(navy.opacity(0.08)))
+                        .foregroundStyle(navy)
+                }
+                .buttonStyle(PressableButtonStyle())
+                .disabled(reportLoading || AuthStore.currentUserId == nil)
+            }
+            .padding(.horizontal, 4)
+
+            if reportLoading {
+                LoadingRowView(label: "나의 글 습관을 분석하고 있어요...", color: navy)
+            }
+
+            if let reportError = reportError {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.circle").font(.system(size: 11))
+                    Text(reportError)
+                }
+                .font(.pretendard(11))
+                .foregroundStyle(Color.red.opacity(0.75))
+            }
+
+            if let report {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        summaryCard(report)
+
+                        if !report.topMistakes.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionLabel("자주 틀리는 어법 TOP \(min(5, report.topMistakes.count))")
+                                ForEach(Array(report.topMistakes.enumerated()), id: \.offset) { index, mistake in
+                                    mistakeRow(rank: index + 1, mistake: mistake)
+                                }
+                            }
+                            .cardBox(hairline: hairline)
+                        }
+
+                        if !report.toneHabits.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                sectionLabel("내 말투 습관")
+                                FlowChips(labels: report.toneHabits, accent: navy, hairline: hairline)
+                            }
+                            .cardBox(hairline: hairline)
+                        }
+
+                        if !report.suggestions.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                sectionLabel("개선 제안")
+                                VStack(alignment: .leading, spacing: 5) {
+                                    ForEach(report.suggestions, id: \.self) { suggestion in
+                                        HStack(alignment: .top, spacing: 6) {
+                                            Circle().fill(burgundy.opacity(0.55)).frame(width: 3, height: 3).padding(.top, 5)
+                                            Text(suggestion)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                }
+                                .font(.pretendard(11.5))
+                                .foregroundStyle(Color.black.opacity(0.55))
+                            }
+                            .cardBox(hairline: hairline)
+                        }
+                    }
+                }
+            } else if !reportLoading && reportError == nil {
+                VStack(spacing: 10) {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                        .font(.system(size: 26))
+                        .foregroundStyle(hairline)
+                    Text("누적된 교정 기록으로\n내 말투 리포트를 만들어 드려요")
+                        .font(.pretendard(12))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Color.black.opacity(0.35))
+                    Button {
+                        loadReport()
+                    } label: {
+                        Text("리포트 생성하기")
+                            .font(.pretendard(12, .semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(LinearGradient(colors: [navy, navyDark], startPoint: .topLeading, endPoint: .bottomTrailing)))
+                            .foregroundStyle(Color.white)
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func summaryCard(_ report: MagicNoteClient.Report) -> some View {
+        HStack(spacing: 10) {
+            statBox(value: "\(report.totalReviews)", label: "검토한 글", warn: false)
+            statBox(value: "\(report.totalCorrections)", label: "누적 교정", warn: false)
+            statBox(
+                value: report.topMistakes.first?.label ?? "—",
+                label: "가장 잦은 실수",
+                warn: true,
+                isText: report.topMistakes.first != nil
+            )
+        }
+    }
+
+    private func statBox(value: String, label: String, warn: Bool, isText: Bool = false) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(isText ? .pretendard(13, .bold) : .pretendard(20, .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(warn ? feedbackText : navy)
+            Text(label)
+                .font(.pretendard(10))
+                .foregroundStyle(Color.black.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.65)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(hairline))
+    }
+
+    private func mistakeRow(rank: Int, mistake: (label: String, count: Int, before: String?, after: String?)) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("\(rank)")
+                    .font(.pretendard(9.5, .bold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 16, height: 16)
+                    .background(Circle().fill(rank <= 3 ? burgundy : Color.black.opacity(0.3)))
+
+                Text(mistake.label)
+                    .font(.pretendard(12.5, .semibold))
+                    .foregroundStyle(Color.black.opacity(0.78))
+
+                Spacer()
+
+                Text("\(mistake.count)회")
+                    .font(.pretendard(10.5, .semibold))
+                    .foregroundStyle(burgundy)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(burgundy.opacity(0.08)))
+            }
+
+            if let before = mistake.before, let after = mistake.after {
+                HStack(spacing: 6) {
+                    Text(before)
+                        .lineLimit(1)
+                        .strikethrough()
+                        .font(.pretendard(10.5))
+                        .foregroundStyle(feedbackText)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Color.black.opacity(0.3))
+                    Text(after)
+                        .lineLimit(1)
+                        .font(.pretendard(10.5, .medium))
+                        .foregroundStyle(navy)
+                }
+                .padding(7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.6)))
+            }
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(hairline))
+    }
+
+    private func loadReport() {
+        guard let userId = AuthStore.currentUserId else { return }
+        reportLoading = true
+        reportError = nil
+        Task {
+            do {
+                let result = try await client.fetchReport(userId: userId)
+                await MainActor.run {
+                    self.report = result
+                    self.reportLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.reportError = error.localizedDescription
+                    self.reportLoading = false
+                }
+            }
+        }
+    }
+
+    private var resultsScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if task == .none && polishedText == nil && analysis == nil && errorMessage == nil {
@@ -425,7 +653,7 @@ struct MainDocumentView: View {
 
     private var reportFab: some View {
         Button {
-            runReport()
+            withAnimation(.easeInOut(duration: 0.2)) { showReportScreen = true }
         } label: {
             Group {
                 if task == .report {
@@ -442,12 +670,11 @@ struct MainDocumentView: View {
             .background(
                 Circle()
                     .fill(LinearGradient(colors: [burgundy, Color(red: 0x8f/255, green: 0x45/255, blue: 0x47/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .opacity(canRun ? 1 : 0.4)
             )
             .shadow(color: burgundy.opacity(canRun ? 0.45 : 0), radius: 8, y: 3)
         }
         .buttonStyle(PressableButtonStyle(scale: 0.92))
-        .disabled(!canRun || task != .none)
+        .disabled(task != .none)
         .help("말투·전달 리포트 받기")
     }
 
@@ -955,5 +1182,27 @@ struct CorrectionConnectorLines: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: isVisible)
+    }
+}
+
+// MARK: - 흐르는 칩 태그 (말투 습관)
+
+struct FlowChips: View {
+    let labels: [String]
+    let accent: Color
+    let hairline: Color
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 6)], alignment: .leading, spacing: 6) {
+            ForEach(labels, id: \.self) { label in
+                Text(label)
+                    .font(.pretendard(10.5, .medium))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(accent.opacity(0.07)))
+                    .overlay(Capsule().stroke(hairline))
+                    .foregroundStyle(Color.black.opacity(0.6))
+            }
+        }
     }
 }

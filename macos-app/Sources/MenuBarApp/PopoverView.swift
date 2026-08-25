@@ -133,14 +133,60 @@ struct PopoverView: View {
 
             contextRow
 
+            if chat.mode == .blocked {
+                purposeChipsRow
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             centerInputRow
 
-            Text("막혔나요?")
-                .font(.pretendard(11.5))
-                .foregroundStyle(Color.black.opacity(0.32))
+            moodButton
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 20)
+        .animation(.easeInOut(duration: 0.15), value: chat.mode)
+    }
+
+    /// 막혔어요 토글 (home-design Composer의 mood-btn)
+    private var moodButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { chat.toggleMode() }
+        } label: {
+            Text(chat.mode == .blocked ? "돌아가기" : "막혔어요")
+                .font(.pretendard(12.5, .semibold))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 6)
+                .background(chat.mode == .blocked ? burgundy : Color.white.opacity(0.55))
+                .overlay(Capsule().strokeBorder(burgundy.opacity(0.35), lineWidth: 1.5))
+                .foregroundStyle(chat.mode == .blocked ? Color.white : burgundy)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(PressableButtonStyle(scale: 0.95))
+    }
+
+    /// 목적 선택 칩 (사과/거절/요청/피드백) — 막힘 모드에서만 노출
+    private var purposeChipsRow: some View {
+        HStack(spacing: 6) {
+            ForEach(ChatViewModel.purposes, id: \.self) { purpose in
+                let isActive = chat.purpose == purpose
+                Button {
+                    chat.purpose = purpose
+                } label: {
+                    Text(purpose)
+                        .font(.pretendard(11.5, isActive ? .semibold : .regular))
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule().fill(isActive ? navy : Color.white.opacity(0.6))
+                        )
+                        .overlay(
+                            Capsule().stroke(isActive ? Color.clear : Color.black.opacity(0.08))
+                        )
+                        .foregroundStyle(isActive ? Color.white : Color.black.opacity(0.45))
+                }
+                .buttonStyle(PressableButtonStyle(scale: 0.96))
+            }
+        }
     }
 
     /// 상대방 · 본인 · 어투 한 줄
@@ -220,7 +266,7 @@ struct PopoverView: View {
                 .font(.pretendard(13))
                 .foregroundStyle(Color.black.opacity(0.75))
                 .placeholder(when: chat.inputValue.isEmpty) {
-                    Text("작성 중이던 초안이나 답장을 입력해 보세요")
+                    Text(chat.mode == .blocked ? "어떤 상황인지 설명해 주세요" : "작성 중이던 초안이나 답장을 입력해 보세요")
                         .font(.pretendard(12.5))
                         .foregroundStyle(Color.black.opacity(0.32))
                         .allowsHitTesting(false)

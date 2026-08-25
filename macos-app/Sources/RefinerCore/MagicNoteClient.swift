@@ -139,6 +139,79 @@ public struct MagicNoteClient {
         }
     }
 
+    // MARK: - 말투 리포트
+
+    public struct Report {
+        public let totalReviews: Int
+        public let totalCorrections: Int
+        public let topMistakes: [(label: String, count: Int, before: String?, after: String?)]
+        public let toneHabits: [String]
+        public let suggestions: [String]
+    }
+
+    public func fetchReport(userId: String) async throws -> Report {
+        var request = URLRequest(url: baseURL.appendingPathComponent("api/report"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 120
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["user_id": userId])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw MagicNoteError.network }
+        guard (200..<300).contains(http.statusCode) else { throw MagicNoteError.server("리포트 조회 실패") }
+
+        struct MistakeDTO: Decodable {
+            let label: String?
+            let count: Int?
+            let exampleBefore: String?
+            let exampleAfter: String?
+
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                label = try? c.decode(String.self, forKey: .label)
+                count = (try? c.decode(Int.self, forKey: .count)) ?? nil
+                if let s = try? c.decode(String.self, forKey: .exampleBefore) { exampleBefore = s } else if let i = try? c.decode(Int.self, forKey: .exampleBefore) { exampleBefore = String(i) } else { exampleBefore = nil }
+                if let s = try? c.decode(String.self, forKey: .exampleAfter) { exampleAfter = s } else if let i = try? c.decode(Int.self, forKey: .exampleAfter) { exampleAfter = String(i) } else { exampleAfter = nil }
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case label, count
+                case exampleBefore = "example_before"
+                case exampleAfter = "example_after"
+            }
+        }
+        struct Response: Decodable {
+            let totalReviews: Int?
+            let totalCorrections: Int?
+            let topMistakes: [MistakeDTO]?
+            let toneHabits: [String]?
+            let suggestions: [String]?
+
+            enum CodingKeys: String, CodingKey {
+                case totalReviews = "total_reviews"
+                case totalCorrections = "total_corrections"
+                case topMistakes = "top_mistakes"
+                case toneHabits = "tone_habits"
+                case suggestions
+            }
+        }
+        do {
+            let r = try JSONDecoder().decode(Response.self, from: data)
+            return Report(
+                totalReviews: r.totalReviews ?? 0,
+                totalCorrections: r.totalCorrections ?? 0,
+                topMistakes: (r.topMistakes ?? []).compactMap {
+                    guard let label = $0.label else { return nil }
+                    return (label, $0.count ?? 0, $0.exampleBefore, $0.exampleAfter)
+                },
+                toneHabits: r.toneHabits ?? [],
+                suggestions: r.suggestions ?? []
+            )
+        } catch {
+            throw MagicNoteError.server("리포트 응답 형식 오류")
+        }
+    }
+
     private func post(path: String, body: [String: Any]) async throws -> Data {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"

@@ -1,0 +1,63 @@
+flowchart TB
+    subgraph APP["macOS 앱 · Magic Note (Swift)"]
+        direction TB
+        LOGIN["로그인/회원가입<br/>LoginView"] --> ROOT["RootView"]
+        DOC["문서 첨삭·리포트 윈도우<br/>MainDocumentView"] --- ROOT
+        POP["메뉴바 팝오버 피드<br/>PopoverView + ChatViewModel"] --- ROOT
+
+        POP --> SVC["APIRefineService"]
+        DOC --> MNC["MagicNoteClient"]
+    end
+
+    subgraph SERVER["FastAPI 서버 · refiner/server.py"]
+        direction TB
+        AUTH["/api/auth/*<br/>signup · login"] 
+        REFINE["/api/refine<br/>첨삭 (+style_profile 주입)"]
+        COMPOSE["/api/compose<br/>초안 3개 생성"]
+        MIRROR["/api/mirror<br/>미러 분석"]
+        STYLE["/api/style/analyze<br/>말투 프로필 갱신"]
+        REPORT["/api/report<br/>말투 리포트 클러스터링"]
+        AUTO["백그라운드: 원문 5개마다<br/>style_profile 자동 갱신"]
+    end
+
+    SVC -->|"user_id 포함"| REFINE
+    MNC -->|"compose"| COMPOSE
+    MNC -->|"mirror"| MIRROR
+    MNC -->|"report"| REPORT
+    AUTH -.->|세션 토큰| SVC
+    AUTH -.-> MNC
+
+    subgraph AI["LLM"]
+        GEM["Gemini API · gemini-3.6-flash"]
+    end
+
+    subgraph DB["Supabase (PostgreSQL)"]
+        PROFILES[("user_profiles<br/>style_profile")]
+        SESSIONS[("message_sessions<br/>원문·교정본 이력")]
+        CORR[("correction_log<br/>교정 항목 로그")]
+        REPORTS[("user_reports<br/>리포트 스냅샷")]
+        CONSENTS[("user_consents")]
+    end
+
+    REFINE --> PIPE["Pipeline + prompts.py"] --> GEM
+    COMPOSE --> GEM
+    MIRROR --> GEM
+    STYLE --> GEM
+    REPORT --> GEM
+
+    STORE["SupabaseStore (REST)"]
+    SERVER --> STORE
+    STORE --> PROFILES
+    STORE --> SESSIONS
+    STORE --> CORR
+    STORE --> REPORTS
+    STORE --> CONSENTS
+    AUTH --> SUPA_AUTH["Supabase Auth"]
+
+    REFINE -.->|"save_history=true"| AUTO
+    AUTO --> PROFILES
+
+    style APP fill:#f5f4fa,stroke:#41456b
+    style SERVER fill:#fdf3f3,stroke:#b05a5b
+    style DB fill:#f0f6ef,stroke:#4a7a45
+    style AI fill:#fffbe8,stroke:#c9a227

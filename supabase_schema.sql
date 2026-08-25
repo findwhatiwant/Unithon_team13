@@ -6,6 +6,7 @@ create table if not exists user_profiles (
   nickname text,
   provider text not null default 'anonymous',
   style_profile text,
+  style_profile_message_count integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

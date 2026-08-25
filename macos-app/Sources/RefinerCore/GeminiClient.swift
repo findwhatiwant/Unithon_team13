@@ -43,7 +43,7 @@ public final class GeminiClient: RefiningService {
     private let maxRetries: Int
     private let session: URLSession
 
-    public init(apiKey: String, model: String = "gemini-3.6-flash", maxRetries: Int = 2, session: URLSession = .shared) {
+    public init(apiKey: String, model: String = "gemini-3.5-flash-lite", maxRetries: Int = 2, session: URLSession = .shared) {
         self.apiKey = apiKey
         self.model = model
         self.maxRetries = maxRetries

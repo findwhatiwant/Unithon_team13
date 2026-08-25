@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -141,7 +141,7 @@ def get_llm_client() -> LLMClient:
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY가 없습니다.")
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash").strip()
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
     return GeminiClient(api_key=api_key, model=model)
 
 
@@ -469,6 +469,174 @@ def analyze_style(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+_STYLE_ANALYZE_MIN_MESSAGES = 5
+_STYLE_ANALYZE_BATCH = 5
+
+
+def maybe_update_style_profile(store: SupabaseStore, client: LLMClient, user_id: str) -> None:
+    """새 원본이 5개 쌓일 때마다 말투 프로필을 자동 갱신한다 (백그라운드)."""
+    try:
+        rows = store.select(
+            "user_profiles",
+            filters={"id": f"eq.{user_id}"},
+            limit=1,
+            columns="style_profile_message_count",
+        )
+        last_count = rows[0].get("style_profile_message_count", 0) if rows else 0
+
+        sessions = store.select(
+            "message_sessions",
+            filters={
+                "user_id": f"eq.{user_id}",
+                "original_text": "not.is.null",
+            },
+            order="created_at.desc",
+            limit=50,
+            columns="original_text",
+        )
+        texts = [str(r["original_text"]).strip() for r in sessions if r.get("original_text")]
+        if len(texts) < _STYLE_ANALYZE_MIN_MESSAGES:
+            return
+        if len(texts) - int(last_count or 0) < _STYLE_ANALYZE_BATCH:
+            return
+
+        profile = _generate_style_profile(client, texts[:20])
+        store.update(
+            "user_profiles",
+            {"style_profile": profile, "style_profile_message_count": len(texts)},
+            {"id": f"eq.{user_id}"},
+        )
+    except Exception:  # 프로필 갱신 실패는 본 요청에 영향 주지 않음
+        pass
+
+
+class RefineLogRequest(BaseModel):
+    user_id: str
+    session_id: str | None = None
+    changes: list[str]
+
+
+@app.post("/api/refine/log")
+def log_corrections(
+    request: RefineLogRequest,
+    store: SupabaseStore = Depends(get_store),
+) -> dict[str, Any]:
+    """다듬기 결과의 변경 요약을 로그로 저장 (리포트 재료)."""
+    try:
+        rows = store.bulk_insert(
+            "correction_log",
+            [
+                {"user_id": request.user_id, "session_id": request.session_id, "change_text": c}
+                for c in request.changes[:30]
+                if c.strip()
+            ],
+        )
+        return {"saved": len(rows)}
+    except SupabaseError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+class ReportResponse(BaseModel):
+    total_reviews: int = 0
+    total_corrections: int = 0
+    top_mistakes: list[dict[str, Any]] = []
+    tone_habits: list[str] = []
+    suggestions: list[str] = []
+    generated_at: str | None = None
+
+
+@app.post("/api/report", response_model=ReportResponse)
+def get_report(
+    request: UserCreateRequest,  # user_id만 사용
+    force: bool = False,
+    store: SupabaseStore = Depends(get_store),
+    client: LLMClient = Depends(get_llm_client),
+) -> ReportResponse:
+    """누적 교정 이력을 클러스터링해 개인화 말투 리포트를 생성/반환."""
+    user_id = request.user_id
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id가 필요합니다.")
+
+    # 같은 날 캐시 재사용 (force면 무시)
+    if not force:
+        cached = store.select(
+            "user_reports",
+            filters={"user_id": f"eq.{user_id}", "report_date": f"eq.{date.today().isoformat()}"},
+            order="created_at.desc",
+            limit=1,
+        )
+        if cached:
+            payload = cached[0].get("payload") or {}
+            return ReportResponse(**{
+                **payload,
+                "total_reviews": cached[0].get("total_reviews", 0),
+                "total_corrections": cached[0].get("total_corrections", 0),
+                "generated_at": cached[0].get("created_at"),
+            })
+
+    sessions = store.select(
+        "message_sessions",
+        filters={"user_id": f"eq.{user_id}", "original_text": "not.is.null"},
+        order="created_at.desc",
+        limit=200,
+        columns="id,original_text,final_text",
+    )
+    logs = store.select(
+        "correction_log",
+        filters={"user_id": f"eq.{user_id}"},
+        order="created_at.desc",
+        limit=300,
+        columns="change_text",
+    )
+    changes = [str(l["change_text"]) for l in logs if l.get("change_text")]
+    if not changes:
+        return ReportResponse()
+
+    profile_rows = store.select(
+        "user_profiles", filters={"id": f"eq.{user_id}"}, limit=1, columns="style_profile"
+    )
+    style_profile = (profile_rows[0].get("style_profile") if profile_rows else None) or "없음"
+
+    clustered = _cluster_corrections(client, changes, style_profile)
+    report = ReportResponse(
+        total_reviews=len(sessions),
+        total_corrections=len(changes),
+        top_mistakes=clustered.get("top_mistakes", []),
+        tone_habits=clustered.get("tone_habits", []),
+        suggestions=clustered.get("suggestions", []),
+    )
+
+    import json as _json
+
+    store.insert(
+        "user_reports",
+        {
+            "user_id": user_id,
+            "total_reviews": report.total_reviews,
+            "total_corrections": report.total_corrections,
+            "payload": _json.loads(report.model_dump_json(exclude={"generated_at"})),
+        },
+    )
+    return report
+
+
+def _cluster_corrections(client: LLMClient, changes: list[str], style_profile: str) -> dict[str, Any]:
+    system = """너는 한국어 글쓰기 분석 전문가다.
+한 사람이 다듬기 서비스에서 받은 교정 요약(change) 목록을 보고 비슷한 유형끼리 묶어 통계를 만든다.
+반드시 아래 JSON 형식으로만 응답한다.
+{
+  "top_mistakes": [
+    {"label": "실수 유형명(짧게)", "count": 빈도수(정수), "example_before": "원래 표현 예시", "example_after": "교정 예시"}
+  ],
+  "tone_habits": ["말투 습관 한 줄"],
+  "suggestions": ["개선 제안 한 줄"]
+}
+top_mistakes는 빈도순 최대 5개, tone_habits와 suggestions는 각 최대 4개다."""
+    joined = "\n".join(f"- {c}" for c in changes[:150])
+    data = _parse_json(client.generate(system, f"[교정 요약 목록]\n{joined}\n\n[기존 말투 프로필]\n{style_profile}"))
+    return data if isinstance(data, dict) else {}
+
+
 def _load_style_profile(store: SupabaseStore, user_id: str | None) -> str | None:
     if not user_id:
         return None
@@ -631,7 +799,7 @@ def _log_ai_request(
                 "user_id": user_id,
                 "session_id": session_id,
                 "feature_type": feature_type,
-                "model": os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+                "model": os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
                 "success": success,
                 "error_message": error_message,
                 "latency_ms": int((time.perf_counter() - started) * 1000),

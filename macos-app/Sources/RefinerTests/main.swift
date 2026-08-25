@@ -214,7 +214,7 @@ func clientTests() async {
         _ = try await client.refine(RefineRequest(text: "원본"))
         check(
             "엔드포인트 경로 확인",
-            capturedPath == "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+            capturedPath == "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
         )
     } catch {
         failures += 1
