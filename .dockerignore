@@ -1,0 +1,14 @@
+.env
+.venv/
+.venv-scrape/
+.build/
+node_modules/
+dist/
+build/
+release/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.git/
+.DS_Store

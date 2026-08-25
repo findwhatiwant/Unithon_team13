@@ -170,6 +170,60 @@ SUPABASE_ANON_KEY=...
 개인정보 보호를 위해 `save_history`가 `false`이거나 `user_id`가 없으면 사용자가 입력한 원문, 상황, 후보 문장, Mirror 분석 문구는 DB에 저장하지 않고 최소 작업 기록만 남긴다.
 회원가입/로그인 사용자는 `user_id`와 `save_history=true`가 넘어왔을 때만 자세한 대화 정보를 사용자와 연결해서 저장한다.
 
+### 2-1. 외부 배포 구조
+
+실제 배포용은 Windows/Mac 앱 안에 FastAPI와 비밀 키를 넣지 않고, FastAPI를 클라우드 서버에 따로 올린다.
+
+- 클라우드 서버: FastAPI, Gemini 호출, Supabase service role key 보관
+- Windows/Mac 앱: 배포된 API 주소만 호출
+- GitHub에 올려도 되는 것: 코드, Dockerfile, `.env.example`, 빌드 방법
+- GitHub에 올리면 안 되는 것: `.env`, 실제 Gemini/Supabase 키, 키가 포함된 exe
+
+Docker 기반 배포 플랫폼에서는 이 저장소 루트의 `Dockerfile`을 사용한다. 배포 환경변수에는 아래 값을 넣는다.
+
+```bash
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-3.5-flash-lite
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_ANON_KEY=...
+```
+
+플랫폼이 `PORT` 환경변수를 자동으로 주면 서버는 그 포트를 사용한다. 상태 확인 경로는 `/health`다.
+
+Render로 URL을 만들 때:
+
+1. GitHub에 이 브랜치를 push한다.
+2. Render에서 New > Blueprint 또는 Web Service를 선택한다.
+3. GitHub 저장소 `findwhatiwant/Unithon_team13`를 연결한다.
+4. `render.yaml`이 감지되면 `magic-note-api` 서비스를 만든다.
+5. 환경변수에 실제 `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`를 입력한다.
+6. Deploy를 누른 뒤 `/health`가 `ok: true`로 뜨는지 확인한다.
+
+Railway로 URL을 만들 때:
+
+1. GitHub에 이 브랜치를 push한다.
+2. Railway에서 New Project > Deploy from GitHub repo를 선택한다.
+3. GitHub 저장소 `findwhatiwant/Unithon_team13`와 이 브랜치를 선택한다.
+4. Dockerfile 기반 배포로 진행한다.
+5. Variables에 실제 Gemini/Supabase 환경변수를 입력한다.
+6. 배포 완료 후 Public Networking 또는 Domain 메뉴에서 공개 URL을 생성한다.
+7. 생성된 URL의 `/health`가 `ok: true`로 뜨는지 확인한다.
+
+Windows 앱이 외부 서버만 사용하게 하려면 앱 실행 환경에 아래 값을 넣는다.
+
+```bash
+REFINER_API_BASE_URL=https://your-deployed-api.example.com
+REFINER_DISABLE_LOCAL_SERVER=1
+```
+
+프론트를 FastAPI와 다른 주소에 따로 배포했다면 추가로 아래 값을 넣는다.
+
+```bash
+REFINER_FRONTEND_BASE_URL=https://your-frontend.example.com
+REFINER_CORS_ORIGINS=https://your-frontend.example.com
+```
+
 추가 저장 컬럼:
 
 - `message_sessions.input_tone`: 사용자가 입력한 문장 또는 선택한 후보 문장에서 AI가 감지한 말투

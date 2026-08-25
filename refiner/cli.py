@@ -1,16 +1,29 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from refiner.llm import GeminiClient
 from refiner.models import Mode, RefineRequest, Tone
 from refiner.pipeline import Pipeline
 
 
+def _env_candidates(path: str) -> list[Path]:
+    env_path = Path(path)
+    if env_path.is_absolute():
+        return [env_path]
+
+    candidates = [Path.cwd() / env_path, Path(__file__).resolve().parents[1] / env_path]
+    if getattr(sys, "frozen", False):
+        candidates.insert(0, Path(sys.executable).resolve().parent / env_path)
+    return list(dict.fromkeys(candidates))
+
+
 def load_env(path: str = ".env") -> None:
-    if not os.path.exists(path):
+    env_file = next((candidate for candidate in _env_candidates(path) if candidate.is_file()), None)
+    if env_file is None:
         return
-    with open(path, encoding="utf-8") as file:
+    with env_file.open(encoding="utf-8") as file:
         for line in file:
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:

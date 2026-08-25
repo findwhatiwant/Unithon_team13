@@ -23,21 +23,32 @@ load_env()
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIST_DIR = PROJECT_ROOT / "dist"
 FRONTEND_INDEX_PATH = FRONTEND_DIST_DIR / "index.html"
+LOCAL_CORS_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8001",
+    "http://localhost:8001",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:4173",
+    "http://localhost:4173",
+]
+
+
+def _cors_origins() -> list[str]:
+    configured = [
+        origin.strip().rstrip("/")
+        for origin in os.environ.get("REFINER_CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    return configured or LOCAL_CORS_ORIGINS
 
 app = FastAPI(title="Message Refiner API", version="0.1.0")
+cors_origins = _cors_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8001",
-        "http://localhost:8001",
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-        "http://127.0.0.1:4173",
-        "http://localhost:4173",
-    ],
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials="*" not in cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -1171,7 +1182,10 @@ def frontend_fallback(full_path: str) -> FileResponse:
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("refiner.server:app", host="127.0.0.1", port=8000, reload=True)
+    host = os.environ.get("REFINER_API_HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT") or os.environ.get("REFINER_API_PORT") or "8000")
+    reload = os.environ.get("REFINER_API_RELOAD", "").strip().lower() in {"1", "true", "yes"}
+    uvicorn.run("refiner.server:app", host=host, port=port, reload=reload)
 
 
 if __name__ == "__main__":

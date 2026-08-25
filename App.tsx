@@ -73,6 +73,7 @@ type StyleAnalyzeResponse = {
   style_profile: string;
 };
 
+const BUILD_API_BASE = import.meta.env.VITE_REFINER_API_BASE_URL?.trim() || null;
 const FALLBACK_API_CANDIDATES = ["http://127.0.0.1:8001", "http://127.0.0.1:8000"];
 const REQUIRED_API_PATHS = ["/api/users", "/api/compose", "/api/mirror", "/api/long-review"];
 const AUTH_STORAGE_KEY = "magic_note_auth_user";
@@ -698,7 +699,7 @@ async function isCompatibleApiBase(baseUrl: string): Promise<boolean> {
 async function discoverApiBase(): Promise<string> {
   const queryApiBase = new URLSearchParams(window.location.search).get("api");
   const sameOrigin = window.location.origin;
-  const candidates = [queryApiBase, sameOrigin, ...FALLBACK_API_CANDIDATES]
+  const candidates = [queryApiBase, BUILD_API_BASE, sameOrigin, ...FALLBACK_API_CANDIDATES]
     .filter((base): base is string => Boolean(base))
     .map(base => base.replace(/\/$/, ""))
     .filter((base, index, list) => list.indexOf(base) === index);
@@ -710,7 +711,7 @@ async function discoverApiBase(): Promise<string> {
       // Try the next local backend port.
     }
   }
-  throw new Error("로컬 백엔드 서버를 찾지 못했습니다.");
+  throw new Error("백엔드 서버를 찾지 못했습니다. 배포 서버 주소 또는 로컬 서버 실행 상태를 확인해 주세요.");
 }
 
 function finalTextFromMirror(result: MirrorResponse | null): string {

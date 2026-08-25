@@ -45,6 +45,8 @@ FRONTEND_SOURCE_PATHS = (
     PROJECT_ROOT / "src" / "main.tsx",
 )
 
+LOCAL_SERVER_DISABLED_VALUES = {"1", "true", "yes", "on"}
+
 WHITE = "#ffffff"
 INK = "#1f2328"
 SUB_TEXT = "#8c9199"
@@ -73,6 +75,10 @@ class APIClient:
 
     def set_base_url(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
+
+    def is_local(self) -> bool:
+        host = urlparse(self.base_url).hostname
+        return host in {None, "127.0.0.1", "localhost", "::1"}
 
     def health(self) -> dict[str, Any]:
         return self._request("GET", "/health")
@@ -159,10 +165,17 @@ class BackendProcess:
     def __init__(self, api: APIClient):
         self.api = api
         self.process: subprocess.Popen[str] | None = None
+        self.local_server_enabled = (
+            os.environ.get("REFINER_DISABLE_LOCAL_SERVER", "").strip().lower()
+            not in LOCAL_SERVER_DISABLED_VALUES
+        )
 
     def ensure_running(self) -> None:
         if self._is_compatible():
             return
+
+        if not self.local_server_enabled:
+            raise RuntimeError(f"배포 백엔드 서버에 연결하지 못했습니다: {self.api.base_url}")
 
         if self._use_running_compatible_server():
             return
@@ -2160,10 +2173,12 @@ class WebTrayApp:
     ):
         load_env()
         base_url = os.environ.get("REFINER_API_BASE_URL", DEFAULT_API_BASE_URL)
+        frontend_base_url = os.environ.get("REFINER_FRONTEND_BASE_URL", "").strip().rstrip("/")
         self.api = APIClient(base_url)
         self.backend = BackendProcess(self.api)
         self.icon: Icon | None = None
         self.web_process: subprocess.Popen[str] | None = None
+        self.frontend_base_url = frontend_base_url or None
         self.surface = surface
         self.window_width = width
         self.window_height = height
@@ -2192,8 +2207,18 @@ class WebTrayApp:
 
     def _startup(self) -> None:
         try:
-            self._ensure_frontend_built()
-            self._ensure_backend_with_frontend()
+            if self.frontend_base_url:
+                self.backend.ensure_running()
+            elif self.api.is_local():
+                self._ensure_frontend_built()
+                self._ensure_backend_with_frontend()
+            else:
+                self.backend.ensure_running()
+                if not self.api.has_frontend():
+                    raise RuntimeError(
+                        "배포 백엔드 서버가 React 화면을 제공하지 않습니다. "
+                        "프론트를 따로 배포했다면 REFINER_FRONTEND_BASE_URL을 설정해 주세요."
+                    )
         except Exception as exc:
             self._startup_error = str(exc)
         finally:
@@ -2239,6 +2264,12 @@ class WebTrayApp:
         if self.api.has_frontend():
             return
 
+        if not self.backend.local_server_enabled or not self.api.is_local():
+            raise RuntimeError(
+                "현재 연결된 백엔드에서 React 화면을 찾지 못했습니다. "
+                "로컬 모드는 npm run build가 필요하고, 배포 모드는 서버에 dist가 포함되어야 합니다."
+            )
+
         if self.backend.process and self.backend.process.poll() is None:
             self.backend.stop()
 
@@ -2258,7 +2289,8 @@ class WebTrayApp:
 
         browser = self._find_browser_executable()
         cache_key = str(int(FRONTEND_INDEX_PATH.stat().st_mtime)) if FRONTEND_INDEX_PATH.is_file() else str(int(time.time()))
-        url = f"{self.api.base_url}/?{urlencode({'surface': self.surface, 'api': self.api.base_url, 'v': cache_key})}"
+        frontend_base_url = self.frontend_base_url or self.api.base_url
+        url = f"{frontend_base_url}/?{urlencode({'surface': self.surface, 'api': self.api.base_url, 'v': cache_key})}"
         if not browser:
             webbrowser.open(url, new=1)
             return
