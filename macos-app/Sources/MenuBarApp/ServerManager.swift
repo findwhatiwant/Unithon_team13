@@ -71,6 +71,14 @@ final class ServerManager {
             return
         }
 
+        // 1순위: 앱 번들에 포함된 자기완결 런타임 (저장소 불필요)
+        if let bundled = resolveBundledRuntime() {
+            spawnServer(executablePath: bundled.pythonBin, arguments: uvicornArguments, environment: bundledEnvironment(bundled), workingDir: bundledWorkingDir())
+            waitForReadiness()
+            return
+        }
+
+        // 2순위: 저장소 체크아웃의 .venv (개발 모드)
         guard let projectDir = resolveProjectDir() else {
             setStatus(.failed("프로젝트 디렉토리를 찾지 못했습니다. 'defaults write com.unithon.team13.MagicNote serverProjectDir <경로>'로 지정하세요."))
             return
@@ -81,8 +89,21 @@ final class ServerManager {
             return
         }
 
-        spawnServer(projectDir: projectDir)
+        spawnServer(
+            executablePath: "\(projectDir)/.venv/bin/python",
+            arguments: uvicornArguments,
+            environment: ProcessInfo.processInfo.environment,
+            workingDir: projectDir
+        )
 
+        waitForReadiness()
+    }
+
+    private var uvicornArguments: [String] {
+        ["-m", "uvicorn", "refiner.server:app", "--host", "127.0.0.1", "--port", String(port)]
+    }
+
+    private func waitForReadiness() {
         setStatus(.starting)
         if waitUntilReady(timeout: 15) {
             status = .running
@@ -181,14 +202,12 @@ final class ServerManager {
 
     // MARK: - 서버 스폰
 
-    private func spawnServer(projectDir: String) {
+    private func spawnServer(executablePath: String, arguments: [String], environment: [String: String], workingDir: String) {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "\(projectDir)/.venv/bin/python")
-        process.arguments = [
-            "-m", "uvicorn", "refiner.server:app",
-            "--host", "127.0.0.1", "--port", String(port),
-        ]
-        process.currentDirectoryURL = URL(fileURLWithPath: projectDir)
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = arguments
+        process.currentDirectoryURL = URL(fileURLWithPath: workingDir)
+        process.environment = environment
 
         if let log = FileHandle(forWritingAtPath: logFile) {
             _ = try? log.seekToEnd()
@@ -215,6 +234,45 @@ final class ServerManager {
         self.process = process
         ownsProcess = true
         try? "\(process.processIdentifier)\n".write(toFile: pidFile, atomically: true, encoding: .utf8)
+    }
+
+    // MARK: - 번들 런타임 (자기완결 모드)
+
+    private struct BundledRuntime {
+        let pythonBin: String
+        let sitePackages: String
+    }
+
+    /// MagicNote.app/Contents/Resources/server/{python,site-packages} 존재 여부 확인
+    private func resolveBundledRuntime() -> BundledRuntime? {
+        guard let resURL = Bundle.main.resourceURL else { return nil }
+        let base = resURL.appendingPathComponent("server")
+        let pythonBin = base.appendingPathComponent("python/bin/python3").path
+        let sitePackages = base.appendingPathComponent("site-packages").path
+
+        guard FileManager.default.isExecutableFile(atPath: pythonBin),
+              FileManager.default.fileExists(atPath: "\(sitePackages)/uvicorn/__init__.py") else { return nil }
+        return BundledRuntime(pythonBin: pythonBin, sitePackages: sitePackages)
+    }
+
+    /// Secrets.plist(GEMINI/SUPABASE 키)를 환경변수로 변환 + PYTHONPATH 구성
+    private func bundledEnvironment(_ runtime: BundledRuntime) -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        env["PYTHONPATH"] = runtime.sitePackages
+
+        if let plistURL = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+           let secrets = NSDictionary(contentsOf: plistURL) as? [String: String] {
+            for key in ["GEMINI_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"] {
+                if let value = secrets[key], !value.isEmpty { env[key] = value }
+            }
+        }
+        return env
+    }
+
+    private func bundledWorkingDir() -> String {
+        let dir = NSTemporaryDirectory() + "magicnote-server"
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        return dir
     }
 
     // MARK: - 프로세스 유틸

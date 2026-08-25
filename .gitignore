@@ -9,3 +9,15 @@ dist/
 build/
 .DS_Store
 .venv-scrape/
+
+# 프레젠테이션·시연 자산 (로컬 보관, 저장소 제외)
+poster/
+diagram/
+PtFlow.md
+
+# 초기 웹 프로토타입 & 실험 스크립트
+App.tsx
+HomeScreen.tsx
+HomeScreen.css
+index.css
+scrape-test/
