@@ -14,7 +14,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-3.6-flash",
+        model: str = "gemini-3.5-flash-lite",
         max_retries: int = 2,
     ):
         from google import genai

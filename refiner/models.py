@@ -21,6 +21,7 @@ class RefineRequest:
     mode: Mode = Mode.POLISH
     tone: Tone | None = None
     context: str | None = None
+    style_profile: str | None = None
 
 
 @dataclass

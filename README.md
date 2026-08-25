@@ -24,10 +24,12 @@ macOS 앱과 동일한 로직의 Python 구현체 (CLI 테스트·라이브러�
 
 ## Windows 시스템 트레이 앱
 
-Windows 알림 영역(시스템 트레이)에 상주하는 앱을 실행할 수 있다. 트레이 아이콘을 클릭하면 작은 작업창이 열리고, 작업창에서 2A/2B MVP 기능을 바로 사용할 수 있다.
+Windows 알림 영역(시스템 트레이)에 상주하는 앱을 실행할 수 있다. 트레이 아이콘을 클릭하면 React 화면이 작은 앱 창처럼 열리고, 작업창에서 2A/2B MVP 기능을 바로 사용할 수 있다.
 
 - 추천받기: 무슨 말을 해야 할지 모를 때 상황/상대/목적/말투를 입력하면 후보 문장 3개를 생성
 - 말투 점검: 이미 쓴 문장을 상황에 맞게 Mirror 분석
+- 긴글 첨삭: 논문/메일/편지/블로그/기타 유형에 맞춰 긴 글을 첨삭하고 자동 요약
+- 로그인/기록 저장: 로그인한 사용자는 대화 기록 저장에 동의한 뒤 말투 학습에 사용할 수 있다
 - 앱 실행 시 로컬 백엔드 서버가 꺼져 있으면 자동으로 `http://127.0.0.1:8000` 서버를 시작
 - `save_history=false`이면 원문/후보/분석 문구는 DB에 저장하지 않음
 
@@ -39,7 +41,7 @@ python -m venv .venv
 copy .env.example .env
 ```
 
-`.env`에 `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`를 채운 뒤 실행한다.
+`.env`에 `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`를 채운 뒤 실행한다.
 
 ```powershell
 .\.venv\Scripts\refiner-tray.exe
@@ -120,6 +122,7 @@ API 실패 시 예외 대신 `RefineResult(success=False, error=...)`를 반환�
 
 - 2A: Quick Compose 후보 생성 후 선택한 문장을 Mirror로 분석
 - 2B: 사용자가 직접 쓴 문장을 Mirror로 분석
+- 긴글 첨삭: 논문/메일/편지/블로그/기타 유형에 맞춰 첨삭본과 자동 요약 생성
 - 3번 Coach 기능은 나중에 확장할 수 있도록 기록만 저장
 
 ### 1. Supabase 테이블 만들기
@@ -135,6 +138,9 @@ Supabase 프로젝트를 만든 뒤 SQL Editor에 `supabase_schema.sql` 내용�
 - `mirror_analyses`: Mirror 분석 결과
 
 이미 생성된 Supabase 프로젝트에 컬럼만 추가할 때는 `supabase_migrations/001_add_style_profile_to_user_profiles.sql`을 SQL Editor에서 실행한다.
+입력문 말투와 AI 추천/분석 근거 컬럼을 추가할 때는 `supabase_migrations/002_add_tone_and_ai_reason_columns.sql`을 SQL Editor에서 실행한다.
+말투 분석 메시지 수 추적 컬럼은 `migrations/003_add_style_profile_counter.sql`을 실행한다.
+교정 로그와 일자별 리포트 스냅샷 테이블은 `migrations/004_correction_log_and_reports.sql`을 실행한다.
 
 ### 2. 환경변수 설정
 
@@ -146,13 +152,28 @@ cp .env.example .env
 
 ```bash
 GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-3.5-flash-lite
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_ANON_KEY=...
 ```
 
-주의: `SUPABASE_SERVICE_ROLE_KEY`는 프론트에 절대 넣지 않는다. 백엔드 서버에서만 사용한다.
+주의: `SUPABASE_SERVICE_ROLE_KEY`와 `SUPABASE_ANON_KEY`는 React 코드에 직접 넣지 않는다. 백엔드 서버의 `.env`에서만 읽는다.
 
-개인정보 보호를 위해 `save_history`가 `false`이면 사용자가 입력한 원문, 상황, 후보 문장, Mirror 분석 문구는 DB에 저장하지 않고 최소 작업 기록만 남긴다.
+개인정보 보호를 위해 `save_history`가 `false`이거나 `user_id`가 없으면 사용자가 입력한 원문, 상황, 후보 문장, Mirror 분석 문구는 DB에 저장하지 않고 최소 작업 기록만 남긴다.
+회원가입/로그인 사용자는 `user_id`와 `save_history=true`가 넘어왔을 때만 자세한 대화 정보를 사용자와 연결해서 저장한다.
+
+추가 저장 컬럼:
+
+- `message_sessions.input_tone`: 사용자가 입력한 문장 또는 선택한 후보 문장에서 AI가 감지한 말투
+- `message_sessions.ai_reason`: 해당 작업에 대한 AI 판단/추천 근거 요약
+- `message_sessions.summary_text`: 긴 글 첨삭 기능에서 생성한 자동 요약
+- `compose_candidates.ai_reason`: 후보 문장을 추천한 이유
+- `mirror_analyses.tone_evidence`: AI가 그 말투로 판단한 표현상 근거
+- `mirror_analyses.ai_reason`: Mirror 분석과 수정 제안의 종합 근거
+- `user_profiles.style_profile_message_count`: 마지막 말투 분석 때 사용 가능한 원본 메시지 수
+- `correction_log.change_text`: 첨삭/다듬기 결과의 변경 요약을 항목별로 저장
+- `user_reports.payload`: 일자별 말투 리포트 스냅샷 JSON
 
 ### 3. 서버 실행
 
@@ -201,6 +222,8 @@ POST /api/compose
 }
 ```
 
+응답의 각 `candidate`에는 `ai_reason`이 포함된다.
+
 Mirror:
 
 ```txt
@@ -221,3 +244,76 @@ POST /api/mirror
 ```
 
 직접 입력 Mirror는 `session_id`, `candidate_id` 없이 보내면 된다.
+응답에는 `perceived_tone`, `tone_evidence`, `risk_reasons`, `ai_reason`이 포함된다.
+
+긴글 첨삭:
+
+```txt
+POST /api/long-review
+```
+
+요청 예시:
+
+```json
+{
+  "user_id": "사용자 ID",
+  "document_type": "메일",
+  "text": "첨삭하고 요약할 긴 글",
+  "save_history": true
+}
+```
+
+`document_type`은 `논문`, `메일`, `편지`, `블로그`, `기타` 중 하나를 사용한다.
+응답에는 `edited_text`, `summary_text`, `key_points`, `changes`, `ai_reason`이 포함된다.
+
+회원가입:
+
+```txt
+POST /api/auth/signup
+```
+
+로그인:
+
+```txt
+POST /api/auth/login
+```
+
+말투 학습:
+
+```txt
+POST /api/style/analyze
+```
+
+`/api/style/analyze`는 저장 동의로 남은 최근 원문 메시지를 분석해 `user_profiles.style_profile`에 저장한다.
+
+교정 로그 저장:
+
+```txt
+POST /api/refine/log
+```
+
+요청 예시:
+
+```json
+{
+  "user_id": "사용자 ID",
+  "session_id": "세션 ID",
+  "changes": ["명령형 표현을 완곡한 요청형으로 변경"]
+}
+```
+
+리포트 생성/조회:
+
+```txt
+POST /api/report
+```
+
+요청 예시:
+
+```json
+{
+  "user_id": "사용자 ID"
+}
+```
+
+`/api/report`는 `correction_log`를 분석해 `top_mistakes`, `tone_habits`, `suggestions`를 만들고, 같은 날 생성된 결과는 `user_reports`에서 재사용한다.

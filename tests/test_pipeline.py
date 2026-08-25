@@ -85,7 +85,7 @@ def test_tone_prompt_includes_tone_label():
 
     _, user = client.calls[0]
     assert "비즈니스" in user
-    assert "어투만 바꾼다" in user
+    assert "어투와 표현만 바꾼다" in user
 
 
 def test_context_passed_to_prompt():
@@ -94,6 +94,15 @@ def test_context_passed_to_prompt():
 
     _, user = client.calls[0]
     assert "직속 상사에게 보내는 메시지" in user
+
+
+def test_style_profile_passed_to_prompt():
+    client = FakeClient()
+    Pipeline(client).run(make_request(style_profile="문장을 짧게 쓰고 ㅋㅋ를 자주 사용함"))
+
+    _, user = client.calls[0]
+    assert "[사용자의 평소 말투]" in user
+    assert "ㅋㅋ를 자주 사용함" in user
 
 
 def test_summarize_instruction_in_prompt():
