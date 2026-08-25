@@ -19,7 +19,7 @@ public enum ResultParser {
         if trimmedText.isEmpty {
             throw RefineError.emptyResult
         }
-        let changes = (dictionary["changes"] as? [Any])?.compactMap { $0 as? String } ?? []
+        let changes = ChangeNormalizer.displayStrings(from: dictionary["changes"] as? [Any])
         return RefineResult(refinedText: trimmedText, changes: changes)
     }
 

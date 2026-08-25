@@ -27,7 +27,7 @@ class RefineRequest:
 @dataclass
 class RefineResult:
     refined_text: str = ""
-    changes: list[str] = field(default_factory=list)
+    changes: list[dict[str, str]] = field(default_factory=list)
     success: bool = True
     error: str | None = None
 

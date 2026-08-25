@@ -47,7 +47,7 @@ public struct APIRefineService: RefiningService {
 
         struct APIResponse: Decodable {
             let refinedText: String
-            let changes: [String]
+            let changes: [FlexibleChange]
 
             enum CodingKeys: String, CodingKey {
                 case refinedText = "refined_text"
@@ -56,7 +56,10 @@ public struct APIRefineService: RefiningService {
         }
         do {
             let decoded = try JSONDecoder().decode(APIResponse.self, from: data)
-            return RefineResult(refinedText: decoded.refinedText, changes: decoded.changes)
+            return RefineResult(
+                refinedText: decoded.refinedText,
+                changes: decoded.changes.map(\.displayText)
+            )
         } catch {
             throw RefineError.parsingFailed("서버 응답 형식 오류")
         }

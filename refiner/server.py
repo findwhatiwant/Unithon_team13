@@ -127,7 +127,7 @@ class AuthResponse(BaseModel):
 class RefineAPIResponse(BaseModel):
     session_id: str
     refined_text: str
-    changes: list[str]
+    changes: list[dict[str, str]]
 
 
 def get_store() -> SupabaseStore:

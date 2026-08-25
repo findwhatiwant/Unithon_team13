@@ -46,7 +46,7 @@ struct MainDocumentView: View {
 
     // 첨삭 결과
     @State private var polishedText: String?
-    @State private var polishedChanges: [String] = []
+    @State private var polishedChanges: [FlexibleChange] = []
     @State private var copiedPolished = false
     @State private var showingResultOnLeft = false
 
@@ -55,8 +55,7 @@ struct MainDocumentView: View {
     @State private var copiedRewriteID: String?
 
     @FocusState private var editorFocused: Bool
-    @State private var itemFrames: [Int: CGRect] = [:]
-    @State private var showReportScreen = false
+    @State private var showReportModal = false
     @State private var report: MagicNoteClient.Report?
     @State private var reportLoading = false
     @State private var reportError: String?
@@ -84,18 +83,6 @@ struct MainDocumentView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .coordinateSpace(name: "docSpace")
-            .onPreferenceChange(CorrectionItemFramesKey.self) {
-                itemFrames = $0
-            }
-            .overlay {
-                CorrectionConnectorLines(
-                    itemFrames: itemFrames,
-                    isVisible: showingResultOnLeft && !polishedChanges.isEmpty,
-                    lineColor: Color.red.opacity(0.45)
-                )
-                .allowsHitTesting(false)
-            }
         }
         .frame(minWidth: 720, idealWidth: 780, minHeight: 560, idealHeight: 640)
         .background(
@@ -111,6 +98,21 @@ struct MainDocumentView: View {
             reportFab
                 .padding(.trailing, 24)
                 .padding(.bottom, 24)
+        }
+        // 리포트 3단계 모달 (티저 → 분석 → 교정 제안)
+        .overlay {
+            if showReportModal {
+                ReportModalView(
+                    report: report,
+                    isLoading: reportLoading,
+                    errorMessage: reportError,
+                    onLoad: { loadReport() },
+                    onClose: {
+                        withAnimation(.easeInOut(duration: 0.2)) { showReportModal = false }
+                    }
+                )
+                .transition(.opacity)
+            }
         }
     }
 
@@ -221,7 +223,7 @@ struct MainDocumentView: View {
             .padding(.top, 0)
 
             ScrollView {
-                Text(polishedText ?? "")
+                underlinedPolished(polishedText ?? "")
                     .font(.pretendard(13))
                     .lineSpacing(6)
                     .textSelection(.enabled)
@@ -257,6 +259,49 @@ struct MainDocumentView: View {
             }
             .buttonStyle(PressableButtonStyle())
         }
+    }
+
+    /// 교정된 부분(corrected 스니펫)을 결과 텍스트에서 찾아 빨간 밑줄을 친다.
+    private func underlinedPolished(_ text: String) -> Text {
+        guard !polishedChanges.isEmpty else { return Text(text) }
+
+        var ranges: [Range<String.Index>] = []
+        var searchStart = text.startIndex
+        for change in polishedChanges {
+            guard let snippet = change.locator, !snippet.isEmpty else { continue }
+            guard let range = text.range(of: snippet, range: searchStart..<text.endIndex)
+                ?? text.range(of: snippet) else { continue }
+            ranges.append(range)
+            searchStart = range.upperBound
+        }
+        guard !ranges.isEmpty else { return Text(text) }
+
+        ranges.sort { $0.lowerBound < $1.lowerBound }
+        var merged: [Range<String.Index>] = []
+        for range in ranges {
+            if let last = merged.last, range.lowerBound <= last.upperBound {
+                merged[merged.count - 1] =
+                    Swift.min(last.lowerBound, range.lowerBound)..<Swift.max(last.upperBound, range.upperBound)
+            } else {
+                merged.append(range)
+            }
+        }
+
+        var result = Text("")
+        var cursor = text.startIndex
+        let underlineColor = burgundy.opacity(0.6)
+        for range in merged {
+            if cursor < range.lowerBound {
+                result = result + Text(text[cursor..<range.lowerBound])
+            }
+            result = result + Text(text[range.lowerBound..<range.upperBound])
+                .underline(true, color: underlineColor)
+            cursor = range.upperBound
+        }
+        if cursor < text.endIndex {
+            result = result + Text(text[cursor...])
+        }
+        return result
     }
 
     private var editorColumn: some View {
@@ -374,208 +419,7 @@ struct MainDocumentView: View {
 
     @ViewBuilder
     private var resultColumn: some View {
-        if showReportScreen {
-            reportScreen
-        } else {
-            resultsScroll
-        }
-    }
-
-    /// 리포트 화면
-    private var reportScreen: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { showReportScreen = false }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.black.opacity(0.5))
-                        .frame(width: 26, height: 26)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(Color.black.opacity(0.05)))
-                }
-                .buttonStyle(PressableButtonStyle())
-
-                Text("나의 말투 리포트")
-                    .font(.pretendard(14, .bold))
-                    .foregroundStyle(Color.black.opacity(0.82))
-
-                Spacer()
-
-                Button {
-                    loadReport()
-                } label: {
-                    Text(report == nil ? "리포트 생성" : "갱신")
-                        .font(.pretendard(10.5, .semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(navy.opacity(0.08)))
-                        .foregroundStyle(navy)
-                }
-                .buttonStyle(PressableButtonStyle())
-                .disabled(reportLoading || AuthStore.currentUserId == nil)
-            }
-            .padding(.horizontal, 4)
-
-            if reportLoading {
-                LoadingRowView(label: "나의 글 습관을 분석하고 있어요...", color: navy)
-            }
-
-            if let reportError = reportError {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.circle").font(.system(size: 11))
-                    Text(reportError)
-                }
-                .font(.pretendard(11))
-                .foregroundStyle(Color.red.opacity(0.75))
-            }
-
-            if let report {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        summaryCard(report)
-
-                        if !report.topMistakes.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                sectionLabel("자주 틀리는 어법 TOP \(min(5, report.topMistakes.count))")
-                                ForEach(Array(report.topMistakes.enumerated()), id: \.offset) { index, mistake in
-                                    mistakeRow(rank: index + 1, mistake: mistake)
-                                }
-                            }
-                            .cardBox(hairline: hairline)
-                        }
-
-                        if !report.toneHabits.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                sectionLabel("내 말투 습관")
-                                FlowChips(labels: report.toneHabits, accent: navy, hairline: hairline)
-                            }
-                            .cardBox(hairline: hairline)
-                        }
-
-                        if !report.suggestions.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                sectionLabel("개선 제안")
-                                VStack(alignment: .leading, spacing: 5) {
-                                    ForEach(report.suggestions, id: \.self) { suggestion in
-                                        HStack(alignment: .top, spacing: 6) {
-                                            Circle().fill(burgundy.opacity(0.55)).frame(width: 3, height: 3).padding(.top, 5)
-                                            Text(suggestion)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                    }
-                                }
-                                .font(.pretendard(11.5))
-                                .foregroundStyle(Color.black.opacity(0.55))
-                            }
-                            .cardBox(hairline: hairline)
-                        }
-                    }
-                }
-            } else if !reportLoading && reportError == nil {
-                VStack(spacing: 10) {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                        .font(.system(size: 26))
-                        .foregroundStyle(hairline)
-                    Text("누적된 교정 기록으로\n내 말투 리포트를 만들어 드려요")
-                        .font(.pretendard(12))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.black.opacity(0.35))
-                    Button {
-                        loadReport()
-                    } label: {
-                        Text("리포트 생성하기")
-                            .font(.pretendard(12, .semibold))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Capsule().fill(LinearGradient(colors: [navy, navyDark], startPoint: .topLeading, endPoint: .bottomTrailing)))
-                            .foregroundStyle(Color.white)
-                    }
-                    .buttonStyle(PressableButtonStyle())
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func summaryCard(_ report: MagicNoteClient.Report) -> some View {
-        HStack(spacing: 10) {
-            statBox(value: "\(report.totalReviews)", label: "검토한 글", warn: false)
-            statBox(value: "\(report.totalCorrections)", label: "누적 교정", warn: false)
-            statBox(
-                value: report.topMistakes.first?.label ?? "—",
-                label: "가장 잦은 실수",
-                warn: true,
-                isText: report.topMistakes.first != nil
-            )
-        }
-    }
-
-    private func statBox(value: String, label: String, warn: Bool, isText: Bool = false) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(isText ? .pretendard(13, .bold) : .pretendard(20, .bold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .foregroundStyle(warn ? feedbackText : navy)
-            Text(label)
-                .font(.pretendard(10))
-                .foregroundStyle(Color.black.opacity(0.4))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.65)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(hairline))
-    }
-
-    private func mistakeRow(rank: Int, mistake: (label: String, count: Int, before: String?, after: String?)) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("\(rank)")
-                    .font(.pretendard(9.5, .bold))
-                    .foregroundStyle(Color.white)
-                    .frame(width: 16, height: 16)
-                    .background(Circle().fill(rank <= 3 ? burgundy : Color.black.opacity(0.3)))
-
-                Text(mistake.label)
-                    .font(.pretendard(12.5, .semibold))
-                    .foregroundStyle(Color.black.opacity(0.78))
-
-                Spacer()
-
-                Text("\(mistake.count)회")
-                    .font(.pretendard(10.5, .semibold))
-                    .foregroundStyle(burgundy)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(Capsule().fill(burgundy.opacity(0.08)))
-            }
-
-            if let before = mistake.before, let after = mistake.after {
-                HStack(spacing: 6) {
-                    Text(before)
-                        .lineLimit(1)
-                        .strikethrough()
-                        .font(.pretendard(10.5))
-                        .foregroundStyle(feedbackText)
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Color.black.opacity(0.3))
-                    Text(after)
-                        .lineLimit(1)
-                        .font(.pretendard(10.5, .medium))
-                        .foregroundStyle(navy)
-                }
-                .padding(7)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.6)))
-            }
-        }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(hairline))
+        resultsScroll
     }
 
     private func loadReport() {
@@ -653,7 +497,7 @@ struct MainDocumentView: View {
 
     private var reportFab: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { showReportScreen = true }
+            withAnimation(.easeInOut(duration: 0.2)) { showReportModal = true }
         } label: {
             Group {
                 if task == .report {
@@ -701,10 +545,10 @@ struct MainDocumentView: View {
 
             if !polishedChanges.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
-                    ForEach(polishedChanges.prefix(3), id: \.self) { change in
+                    ForEach(Array(polishedChanges.prefix(3).enumerated()), id: \.offset) { _, change in
                         HStack(alignment: .top, spacing: 5) {
                             Circle().fill(burgundy.opacity(0.55)).frame(width: 3, height: 3).padding(.top, 5)
-                            Text(change)
+                            Text(change.displayText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -778,7 +622,7 @@ struct MainDocumentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
-            } else {
+                        } else {
                 VStack(spacing: 8) {
                     ForEach(Array(polishedChanges.enumerated()), id: \.offset) { index, change in
                         correctionItem(index: index + 1, change: change)
@@ -789,10 +633,9 @@ struct MainDocumentView: View {
         .cardBox(hairline: hairline)
     }
 
-    private func correctionItem(index: Int, change: String) -> some View {
-        let parts = change.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
-        let issue = parts.count > 1 ? parts[0] : change
-        let reason = parts.count > 1 ? parts[1] : ""
+    private func correctionItem(index: Int, change: FlexibleChange) -> some View {
+        let issue = change.displayText
+        let reason = change.reason ?? ""
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
@@ -828,14 +671,6 @@ struct MainDocumentView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.6)))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(hairline))
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(
-                    key: CorrectionItemFramesKey.self,
-                    value: [index: geo.frame(in: .named("docSpace"))]
-                )
-            }
-        )
     }
 
     // MARK: - 리포트 카드들
@@ -996,7 +831,7 @@ struct MainDocumentView: View {
                 }
                 struct Response: Decodable {
                     let refinedText: String
-                    let changes: [String]
+                    let changes: [FlexibleChange]
                     enum CodingKeys: String, CodingKey {
                         case refinedText = "refined_text"
                         case changes
@@ -1113,75 +948,6 @@ private extension View {
             .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.68)))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(hairline))
             .shadow(color: Color.black.opacity(0.06), radius: 5, y: 2)
-    }
-}
-
-// MARK: - 교정 항목 ↔ 원본 연결선
-
-/// 교정 항목 카드 위치를 수집하는 PreferenceKey
-struct CorrectionItemFramesKey: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
-
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue()) { current, _ in current }
-    }
-}
-
-/// 오른쪽 교정 항목에서 왼쪽 결과 패널로 이어지는 빨간 곡선
-struct CorrectionConnectorLines: View {
-    let itemFrames: [Int: CGRect]
-    let isVisible: Bool
-    let lineColor: Color
-
-    var body: some View {
-        Canvas { context, size in
-            guard isVisible, !itemFrames.isEmpty else { return }
-
-            // 왼쪽(결과) 패널과 오른쪽(리포트) 패널 경계
-            let boundaryX = size.width * 0.5 - 4
-            let leftAnchorX = size.width * 0.46 + 8
-
-            let sortedItems = itemFrames.sorted { $0.key < $1.key }
-            let count = CGFloat(sortedItems.count)
-            let anchorTop = size.height * 0.22
-            let anchorBottom = size.height * 0.72
-
-            for (offset, entry) in sortedItems.enumerated() {
-                let itemFrame = entry.value
-                guard itemFrame.minY > 0, itemFrame.minY < size.height else { continue }
-
-                let startX = itemFrame.minX - 6
-                let startY = itemFrame.midY
-                // 왼쪽 패널의 앵커는 항목 순서에 따라 세로로 분산
-                let t = count > 1 ? CGFloat(offset) / (count - 1) : 0.5
-                let endY = anchorTop + t * (anchorBottom - anchorTop)
-
-                var path = Path()
-                path.move(to: CGPoint(x: startX, y: startY))
-                path.addCurve(
-                    to: CGPoint(x: leftAnchorX, y: endY),
-                    control1: CGPoint(x: startX - 40, y: startY),
-                    control2: CGPoint(x: leftAnchorX + 50, y: endY)
-                )
-
-                context.stroke(
-                    path,
-                    with: .color(lineColor),
-                    style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])
-                )
-
-                // 시작점: 항목 쪽 빨간 점
-                context.fill(Path(ellipseIn: CGRect(x: startX - 3, y: startY - 3, width: 6, height: 6)), with: .color(Color.red.opacity(0.7)))
-                // 끝점: 원본 패널 쪽 화살표
-                var arrow = Path()
-                arrow.move(to: CGPoint(x: leftAnchorX - 6, y: endY - 4))
-                arrow.addLine(to: CGPoint(x: leftAnchorX + 2, y: endY))
-                arrow.addLine(to: CGPoint(x: leftAnchorX - 6, y: endY + 4))
-                arrow.closeSubpath()
-                context.fill(arrow, with: .color(Color.red.opacity(0.7)))
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: isVisible)
     }
 }
 

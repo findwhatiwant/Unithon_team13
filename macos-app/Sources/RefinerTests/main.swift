@@ -171,6 +171,19 @@ func parserTests() {
         print("  FAIL  changes 기본값 빈 배열 (\(error))")
     }
 
+    do {
+        let result = try ResultParser.parse(
+            #"{"refined_text": "못 갈 것 같아요", "changes": [{"original": "못갈거같아요", "corrected": "못 갈 것 같아요", "reason": "띄어쓰기 교정", "extra": 1}, "문장 정리"]}"#
+        )
+        check(
+            "구조화 changes 표시 문자열 변환",
+            result.changes == ["못갈거같아요 → 못 갈 것 같아요", "문장 정리"]
+        )
+    } catch {
+        failures += 1
+        print("  FAIL  구조화 changes 표시 문자열 변환 (\(error))")
+    }
+
     checkThrows(
         "refined_text 누락 거부", .parsingFailed("refined_text 누락"),
         { try ResultParser.parse(#"{"changes": []}"#) }

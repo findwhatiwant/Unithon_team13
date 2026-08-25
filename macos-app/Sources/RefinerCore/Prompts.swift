@@ -7,7 +7,11 @@ public enum Prompts {
     - 고유명사, 숫자, 링크, 이모지는 원문 그대로 유지한다.
     - 원문이 아무리 길어도 전체를 빠짐없이 처리하며, 내용을 임의로 생략하지 않는다.
     - 반드시 아래 JSON 형식으로만 응답한다.
-    {"refined_text": "다듬어진 메시지", "changes": ["바뀐 점 요약"]}
+    {"refined_text": "다듬어진 메시지", "changes": [{"original": "원문에서 바뀐 부분", "corrected": "다듬어진 문장에서 바뀐 부분", "reason": "교정 이유"}]}
+
+    changes 규칙:
+    - original은 [원본 메시지]에 실제로 포함된 연속 구간을, corrected는 refined_text에 실제로 포함된 연속 구간을 문자 그대로 복사해 담는다. 재구성·요약하지 않는다.
+    - 교정한 부분이 없으면 []로 반환한다. 최대 12개까지만 담는다.
     """
 
     private static let modeInstructions: [Mode: String] = [

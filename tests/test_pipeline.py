@@ -13,7 +13,18 @@ class FakeClient:
         self.response = (
             response
             if response is not None
-            else json.dumps({"refined_text": "다듬어진 메시지", "changes": ["오타 수정"]})
+            else json.dumps(
+                {
+                    "refined_text": "다듬어진 메시지",
+                    "changes": [
+                        {
+                            "original": "뭐해?",
+                            "corrected": "뭐해?",
+                            "reason": "띄어쓰기 교정",
+                        }
+                    ],
+                }
+            )
         )
         self.error = error
         self.calls: list[tuple[str, str]] = []
@@ -36,7 +47,34 @@ def test_polish_returns_refined_result():
 
     assert result.success
     assert result.refined_text == "다듬어진 메시지"
-    assert result.changes == ["오타 수정"]
+    assert result.changes == [
+        {"original": "뭐해?", "corrected": "뭐해?", "reason": "띄어쓰기 교정"}
+    ]
+
+
+def test_string_changes_normalized_to_summary():
+    response = json.dumps({"refined_text": "결과", "changes": ["오타 수정", ""]})
+    result = Pipeline(FakeClient(response=response)).run(make_request())
+
+    assert result.changes == [{"summary": "오타 수정"}]
+
+
+def test_dict_changes_keep_only_known_keys():
+    response = json.dumps(
+        {
+            "refined_text": "결과",
+            "changes": [
+                {"original": "a", "corrected": "b", "reason": "c", "extra": 1},
+                {"unknown": "x"},
+                42,
+            ],
+        }
+    )
+    result = Pipeline(FakeClient(response=response)).run(make_request())
+
+    assert result.changes == [
+        {"original": "a", "corrected": "b", "reason": "c"},
+    ]
 
 
 def test_empty_text_raises():

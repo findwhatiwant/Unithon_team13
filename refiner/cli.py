@@ -64,7 +64,16 @@ def main(argv: list[str] | None = None) -> int:
     if result.changes:
         print("\n변경 사항:")
         for change in result.changes:
-            print(f"- {change}")
+            if "summary" in change:
+                print(f"- {change['summary']}")
+                continue
+            original = change.get("original", "?")
+            corrected = change.get("corrected", "?")
+            line = f"- {original} → {corrected}"
+            reason = change.get("reason")
+            if reason:
+                line += f" ({reason})"
+            print(line)
     return 0
 
 
