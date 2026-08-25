@@ -24,6 +24,7 @@ class UserCreateRequest(BaseModel):
     email: str | None = None
     nickname: str | None = None
     provider: str = "anonymous"
+    style_profile: str | None = None
 
 
 class UserCreateResponse(BaseModel):
@@ -31,6 +32,7 @@ class UserCreateResponse(BaseModel):
     email: str | None = None
     nickname: str | None = None
     provider: str
+    style_profile: str | None = None
 
 
 class ConsentRequest(BaseModel):
@@ -134,6 +136,8 @@ def create_user(
         "nickname": request.nickname,
         "provider": request.provider,
     }
+    if request.style_profile is not None:
+        payload["style_profile"] = request.style_profile
     if request.user_id:
         payload["id"] = request.user_id
         row = store.upsert("user_profiles", payload, on_conflict="id")
@@ -144,6 +148,7 @@ def create_user(
         email=row.get("email"),
         nickname=row.get("nickname"),
         provider=row.get("provider", "anonymous"),
+        style_profile=row.get("style_profile"),
     )
 
 

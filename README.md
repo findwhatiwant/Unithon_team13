@@ -22,6 +22,37 @@ open dist/MessageRefiner.app
 
 macOS 앱과 동일한 로직의 Python 구현체 (CLI 테스트·라이브러리 용도).
 
+## Windows 시스템 트레이 앱
+
+Windows 알림 영역(시스템 트레이)에 상주하는 앱을 실행할 수 있다. 트레이 아이콘을 클릭하면 작은 작업창이 열리고, 작업창에서 2A/2B MVP 기능을 바로 사용할 수 있다.
+
+- 추천받기: 무슨 말을 해야 할지 모를 때 상황/상대/목적/말투를 입력하면 후보 문장 3개를 생성
+- 말투 점검: 이미 쓴 문장을 상황에 맞게 Mirror 분석
+- 앱 실행 시 로컬 백엔드 서버가 꺼져 있으면 자동으로 `http://127.0.0.1:8000` 서버를 시작
+- `save_history=false`이면 원문/후보/분석 문구는 DB에 저장하지 않음
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\pip.exe install -e ".[dev]"
+copy .env.example .env
+```
+
+`.env`에 `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`를 채운 뒤 실행한다.
+
+```powershell
+.\.venv\Scripts\refiner-tray.exe
+```
+
+콘솔 창 없이 실행하고 싶으면 아래처럼 실행한다.
+
+```powershell
+.\.venv\Scripts\pythonw.exe -m refiner.windows_tray
+```
+
+실행 후 작업 표시줄 오른쪽의 숨겨진 아이콘 영역에서 노란 말풍선 아이콘을 찾고, 아이콘을 클릭해 작업창을 연다.
+
 ## 구조
 
 ```
@@ -30,6 +61,9 @@ refiner/
 ├── prompts.py    # 모드·톤별 프롬프트 템플릿
 ├── llm.py        # LLMClient 인터페이스 + GeminiClient (재시도 포함)
 ├── pipeline.py   # 검증 → 프롬프트 조립 → LLM 호출 → 파싱
+├── server.py     # FastAPI 백엔드 서버
+├── supabase_store.py # Supabase REST 저장소
+├── windows_tray.py # Windows 시스템 트레이 앱
 └── cli.py        # 터미널 실행기
 tests/            # pytest (가짜 클라이언트 주입, API 키 불필요)
 ```
@@ -99,6 +133,8 @@ Supabase 프로젝트를 만든 뒤 SQL Editor에 `supabase_schema.sql` 내용�
 - `message_sessions`: 한 번의 작성/분석 작업 기록
 - `compose_candidates`: Quick Compose 후보 문장
 - `mirror_analyses`: Mirror 분석 결과
+
+이미 생성된 Supabase 프로젝트에 컬럼만 추가할 때는 `supabase_migrations/001_add_style_profile_to_user_profiles.sql`을 SQL Editor에서 실행한다.
 
 ### 2. 환경변수 설정
 
