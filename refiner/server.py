@@ -259,6 +259,25 @@ def save_consent(
     return {"user_id": row["user_id"], "saved": True}
 
 
+@app.get("/api/consents/{user_id}")
+def get_consents(
+    user_id: str,
+    store: SupabaseStore = Depends(get_store),
+) -> dict[str, Any]:
+    """사용자의 현재 동의 상태. 기록이 없으면 전부 미동의(false)."""
+    try:
+        rows = store.select("user_consents", filters={"user_id": f"eq.{user_id}"}, limit=1)
+    except SupabaseError:
+        rows = []
+    row = rows[0] if rows else {}
+    return {
+        "user_id": user_id,
+        "save_message_history": bool(row.get("save_message_history", False)),
+        "coach_analysis": bool(row.get("coach_analysis", False)),
+        "sensitive_info_storage": bool(row.get("sensitive_info_storage", False)),
+    }
+
+
 @app.post("/api/compose", response_model=ComposeResponse)
 def compose(
     request: ComposeRequest,

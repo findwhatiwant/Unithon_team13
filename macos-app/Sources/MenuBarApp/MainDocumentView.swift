@@ -818,7 +818,8 @@ struct MainDocumentView: View {
                 var body: [String: Any] = [
                     "text": text,
                     "mode": "polish",
-                    "save_history": true,
+                    // 동의한 경우에만 원문·결과를 서버에 저장한다
+                    "save_history": ConsentStore.saveMessageHistory,
                     // 카테고리별 첨삭 가이드를 맥락으로 전달
                     "context": categoryPromptGuide,
                 ]

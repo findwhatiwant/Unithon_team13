@@ -17,7 +17,7 @@ public struct APIRefineService: RefiningService {
             "user_id": userId,
             "text": request.text,
             "mode": request.mode.rawValue,
-            "save_history": true, // 말투 학습을 위해 원문 저장 (동의 항목과 연동)
+            "save_history": ConsentStore.saveMessageHistory, // 동의한 경우에만 원문 저장 (말투 학습 재료)
         ]
         body["tone"] = request.tone?.rawValue
         body["context"] = request.context

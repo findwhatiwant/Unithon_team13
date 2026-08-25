@@ -27,5 +27,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppFont.registerAll()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+
+        // 백엔드 서버 자동 기동 (이미 살아있으면 재사용)
+        ServerManager.shared.bootstrap()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // 앱이 직접 띄운 서버만 정리
+        ServerManager.shared.shutdown()
     }
 }

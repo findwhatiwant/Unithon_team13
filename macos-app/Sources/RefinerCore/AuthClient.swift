@@ -80,6 +80,39 @@ public enum AuthStore {
         UserDefaults.standard.removeObject(forKey: userKey)
         UserDefaults.standard.removeObject(forKey: emailKey)
         UserDefaults.standard.removeObject(forKey: tokenKey)
+        ConsentStore.clear()
+    }
+}
+
+/// 동의 상태 캐시. 미동의(기본값)면 메시지 원문을 서버에 저장하지 않는다.
+public enum ConsentStore {
+    private static let historyKey = "consentSaveMessageHistory"
+    private static let coachKey = "consentCoachAnalysis"
+    private static let sensitiveKey = "consentSensitiveInfo"
+
+    public static var saveMessageHistory: Bool {
+        UserDefaults.standard.bool(forKey: historyKey)
+    }
+
+    public static var coachAnalysis: Bool {
+        UserDefaults.standard.bool(forKey: coachKey)
+    }
+
+    public static var sensitiveInfo: Bool {
+        UserDefaults.standard.bool(forKey: sensitiveKey)
+    }
+
+    public static func cache(_ consents: AuthClient.Consents) {
+        let defaults = UserDefaults.standard
+        defaults.set(consents.messageHistory, forKey: historyKey)
+        defaults.set(consents.coachAnalysis, forKey: coachKey)
+        defaults.set(consents.sensitiveInfo, forKey: sensitiveKey)
+    }
+
+    public static func clear() {
+        UserDefaults.standard.removeObject(forKey: historyKey)
+        UserDefaults.standard.removeObject(forKey: coachKey)
+        UserDefaults.standard.removeObject(forKey: sensitiveKey)
     }
 }
 
@@ -133,6 +166,37 @@ public struct AuthClient {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw AuthError(status: (response as? HTTPURLResponse)?.statusCode ?? -1, body: nil)
         }
+        ConsentStore.cache(consents)
+    }
+
+    /// 서버에서 현재 동의 상태를 조회해 캐시한다. 로그인 직후 호출.
+    public func fetchConsents(userId: String) async throws -> Consents {
+        var urlRequest = URLRequest(url: baseURL.appendingPathComponent("api/consents/\(userId)"))
+        urlRequest.timeoutInterval = 15
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw AuthError(status: (response as? HTTPURLResponse)?.statusCode ?? -1, body: nil)
+        }
+        struct DTO: Decodable {
+            let saveMessageHistory: Bool
+            let coachAnalysis: Bool
+            let sensitiveInfoStorage: Bool
+
+            enum CodingKeys: String, CodingKey {
+                case saveMessageHistory = "save_message_history"
+                case coachAnalysis = "coach_analysis"
+                case sensitiveInfoStorage = "sensitive_info_storage"
+            }
+        }
+        let decoded = try JSONDecoder().decode(DTO.self, from: data)
+        let consents = Consents(
+            messageHistory: decoded.saveMessageHistory,
+            coachAnalysis: decoded.coachAnalysis,
+            sensitiveInfo: decoded.sensitiveInfoStorage
+        )
+        ConsentStore.cache(consents)
+        return consents
     }
 
     private func request(

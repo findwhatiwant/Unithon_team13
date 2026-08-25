@@ -26,7 +26,7 @@ public struct MagicNoteClient {
         var body: [String: Any] = [
             "context": context,
             "purpose": purpose,
-            "save_history": true,
+            "save_history": ConsentStore.saveMessageHistory,
         ]
         body["user_id"] = userId
         body["tone"] = tone
@@ -88,7 +88,7 @@ public struct MagicNoteClient {
     ) async throws -> MirrorAnalysis {
         var body: [String: Any] = [
             "text": text,
-            "save_history": true,
+            "save_history": ConsentStore.saveMessageHistory,
         ]
         body["user_id"] = userId
         body["session_id"] = sessionId

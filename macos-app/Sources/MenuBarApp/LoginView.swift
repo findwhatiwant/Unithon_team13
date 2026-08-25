@@ -206,6 +206,9 @@ struct LoginView: View {
                         email: email.trimmingCharacters(in: .whitespacesAndNewlines),
                         password: password
                     )
+                    AuthStore.saveSession(response)
+                    // 기존 사용자의 동의 상태를 서버에서 가져와 캐시 (실패해도 로그인은 유지)
+                    try? await client.fetchConsents(userId: response.userId)
                 case .signUp:
                     response = try await client.signUp(
                         email: email.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -221,8 +224,8 @@ struct LoginView: View {
                             sensitiveInfo: consentSensitive
                         )
                     )
+                    AuthStore.saveSession(response)
                 }
-                AuthStore.saveSession(response)
             } catch let error as AuthError {
                 errorMessage = error.message
             } catch {

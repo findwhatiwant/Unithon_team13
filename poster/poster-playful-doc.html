@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MagicNote — Long-form Polish &amp; Report Poster (Playful Landscape)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  @page { size: A3 landscape; margin: 0; }
+  body { background: #d9d2c3; display: flex; justify-content: center; padding: 24px 0;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #1A1A1A; }
+  @media print { body { padding: 0; background: #fff; } .poster { box-shadow: none; } }
+
+  .poster {
+    width: 420mm; height: 297mm;
+    position: relative; overflow: hidden;
+    background: #FFF6E9;
+    padding: 40px 52px 32px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 70px rgba(26,26,26,.35);
+  }
+
+  .deco-bubble { position: absolute; border: 3px solid #1A1A1A; border-radius: 18px; padding: 10px 16px;
+    font-size: 14px; font-weight: 700; box-shadow: 5px 5px 0 #1A1A1A; z-index: 2; }
+  .bubble-a { top: 118px; right: 56px; background: #FFD84D; transform: rotate(-3deg); border-bottom-right-radius: 4px; }
+  .bubble-b { bottom: 150px; left: -8px; background: #fff; transform: rotate(2.4deg); font-weight: 600; border-bottom-left-radius: 4px; font-size: 13.5px; }
+  .dot-grid { position: absolute; width: 220px; height: 160px; z-index: 0;
+    background-image: radial-gradient(#1A1A1A 2.2px, transparent 2.6px); background-size: 22px 22px; opacity: .14; }
+  .dots-1 { bottom: 26px; right: -30px; transform: rotate(-8deg); }
+  .dots-2 { top: 34px; left: 300px; }
+
+  .content { position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1; gap: 18px; }
+
+  .topbar { display: flex; align-items: center; gap: 16px; }
+  .sticker { display: inline-block; background: #FFD84D; border: 3px solid #1A1A1A; border-radius: 999px;
+    padding: 7px 19px; font-size: 14px; font-weight: 900; letter-spacing: .14em; box-shadow: 4px 4px 0 #1A1A1A; transform: rotate(-2deg); }
+  .sticker.blue { background: #A8D8FF; transform: rotate(1.6deg); margin-left: auto; }
+
+  /* ---- hero ---- */
+  .hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 30px; align-items: start; }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .brand-mark { width: 48px; height: 48px; background: #FF5D8F; border: 3px solid #1A1A1A; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; box-shadow: 5px 5px 0 #1A1A1A; transform: rotate(-4deg); }
+  .brand-mark svg { width: 27px; height: 27px; fill: #fff; }
+  .brand-name { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+  .brand-name .hl { background: linear-gradient(transparent 55%, #FFD84D 55%); padding: 0 4px; }
+
+  h1 { font-size: 58px; line-height: 1.1; font-weight: 900; letter-spacing: -.03em; margin-top: 10px; white-space: nowrap; }
+  h1 .mark { display: inline-block; background: #FFD84D; border: 3px solid #1A1A1A; border-radius: 14px;
+    padding: 2px 16px 7px; box-shadow: 7px 7px 0 #1A1A1A; transform: rotate(-1.5deg); margin-top: 8px; }
+  h1 .mark.pink { background: #FFB3C9; transform: rotate(1.2deg); }
+  h1 .mark.blue { background: #A8D8FF; transform: rotate(-1deg); }
+
+  /* ---- 두 개의 큰 섹션 카드 ---- */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+  .panel { background: #fff; border: 3px solid #1A1A1A; border-radius: 20px; box-shadow: 7px 7px 0 #1A1A1A;
+    display: flex; flex-direction: column; overflow: hidden; }
+  .panel:nth-child(1) { transform: rotate(-.4deg); }
+  .panel:nth-child(2) { transform: rotate(.4deg); }
+  .panel-head { padding: 13px 22px; display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #1A1A1A; }
+  .panel-head.pink { background: #FF5D8F; } .panel-head.navy { background: #2B3A8F; }
+  .panel-icon { width: 36px; height: 36px; background: #fff; border: 3px solid #1A1A1A; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 900; }
+  .panel-title { font-size: 21px; font-weight: 900; color: #fff; text-shadow: 1.5px 1.5px 0 rgba(26,26,26,.45); }
+  .panel-tag { font-size: 11px; letter-spacing: .18em; color: rgba(255,255,255,.88); font-weight: 800; text-transform: uppercase; }
+  .panel-body { padding: 16px 20px 18px; display: flex; flex-direction: column; gap: 13px; flex: 1; }
+  .panel-desc { font-size: 14.5px; line-height: 1.5; font-weight: 600; color: #3D3D3D; }
+
+  /* ---- 공용 프리미티브 ---- */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 12.5px; font-weight: 800; border: 2px solid #1A1A1A; border-radius: 999px; padding: 4px 13px; background: #EDEAFF; }
+  .chip.c1 { background: #FFE3EC; } .chip.c2 { background: #DCEBFF; } .chip.c3 { background: #DCF5E5; } .chip.c4 { background: #FFF3CC; }
+
+  .mini-label { align-self: flex-start; font-size: 11px; font-weight: 900; letter-spacing: .16em;
+    border: 2px solid #1A1A1A; border-radius: 999px; padding: 3px 11px; background: #FFFBEA; }
+
+  .doc-mock { border: 2.5px dashed #1A1A1A; border-radius: 13px; background: #FFFBEA; padding: 13px 15px;
+    display: flex; flex-direction: column; gap: 9px; }
+  .line { height: 9px; border-radius: 999px; background: #E8DFCB; position: relative; }
+  .line.err::after { content: ""; position: absolute; inset: -1px auto -1px 38%; width: 24%;
+    background: repeating-linear-gradient(45deg,#FFB3C9,#FFB3C9 4px,#fff 4px,#fff 8px);
+    border: 2px solid #1A1A1A; border-radius: 999px; }
+  .fix-card { background: #fff; border: 2px solid #1A1A1A; border-radius: 12px; padding: 9px 12px;
+    display: flex; align-items: flex-start; gap: 9px; box-shadow: 3px 3px 0 #1A1A1A; }
+  .fix-num { min-width: 20px; height: 20px; border-radius: 50%; border: 2px solid #1A1A1A; background: #FFB3C9;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; margin-top: 1px; }
+  .fix-text { font-size: 13.5px; line-height: 1.45; font-weight: 600; }
+  .fix-text small { display: block; font-size: 11.5px; font-weight: 600; color: #4A4A4A; margin-top: 3px; }
+  .fix-badge { display: inline-block; font-size: 9.5px; font-weight: 900; color: #2B3A8F; background: #DCEBFF;
+    border: 1.5px solid #2B3A8F; border-radius: 5px; padding: 0 6px; margin-right: 5px; vertical-align: 1px; }
+  .strike { text-decoration: line-through; text-decoration-color: #E0447A; text-decoration-thickness: 2px; }
+  .ins { background: #DFF7E7; border-bottom: 2px solid #1FA05A; font-weight: 800; padding: 0 2px; }
+
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .step { border: 2px solid #1A1A1A; border-radius: 12px; background: #FFF6E9; padding: 9px 11px 8px; position: relative;
+    font-size: 12px; line-height: 1.4; font-weight: 700; box-shadow: 3px 3px 0 #1A1A1A; }
+  .step b { display: block; font-size: 12.5px; margin-top: 2px; }
+  .step-num { position: absolute; top: -11px; left: 10px; width: 22px; height: 22px; border: 2px solid #1A1A1A; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
+  .sn1 { background: #FFD84D; } .sn2 { background: #FFB3C9; } .sn3 { background: #A8D8FF; } .sn4 { background: #C4F5CE; }
+
+  /* ---- 리포트 패널 전용 ---- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat { border: 2.5px solid #1A1A1A; border-radius: 13px; background: #FFF6E9; text-align: center;
+    padding: 11px 6px 9px; box-shadow: 3px 3px 0 #1A1A1A; }
+  .stat .v { font-size: 23px; font-weight: 900; letter-spacing: -.02em; }
+  .stat .v.small { font-size: 14px; padding: 3px 0; }
+  .stat .k { font-size: 10.5px; font-weight: 700; color: #6b6b6b; margin-top: 2px; }
+  .stat.warn .v { color: #E0447A; }
+
+  .mistake { display: flex; align-items: center; gap: 9px; background: #fff; border: 2px solid #1A1A1A;
+    border-radius: 999px; padding: 5px 13px 5px 6px; box-shadow: 3px 3px 0 #1A1A1A; width: fit-content; }
+  .rank { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #1A1A1A; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 900; }
+  .r1 { background: #FFD84D; } .r2 { background: #DCEBFF; } .r3 { background: #FFB3C9; }
+  .mistake .t { font-size: 13px; font-weight: 800; }
+  .mistake .cnt { margin-left: 4px; font-size: 11px; font-weight: 900; color: #E0447A; }
+
+  .suggest { display: flex; flex-direction: column; gap: 6px; }
+  .suggest div { display: flex; gap: 7px; font-size: 13px; font-weight: 600; color: #3D3D3D; line-height: 1.45; }
+  .suggest i { min-width: 6px; height: 6px; border-radius: 50%; background: #FF5D8F; margin-top: 6px; }
+
+  footer { border-top: 3px solid #1A1A1A; padding-top: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .foot-left { font-size: 16px; font-weight: 900; }
+  .foot-left span { background: #FFD84D; padding: 2px 10px; border-radius: 8px; margin-right: 8px; display: inline-block; transform: rotate(-1deg); }
+  .stack { display: flex; gap: 10px; }
+  .stack span { font-size: 13px; font-weight: 800; border: 2.5px solid #1A1A1A; border-radius: 999px; padding: 5px 15px; background: #fff; box-shadow: 3px 3px 0 #1A1A1A; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="dot-grid dots-1"></div>
+  <div class="dot-grid dots-2"></div>
+
+  <div class="content">
+    <div class="topbar">
+      <span class="sticker">UNITHON TEAM 13</span>
+      <span class="sticker blue">LONG-FORM EDITION · 긴 글 첨삭 &amp; 리포트</span>
+    </div>
+
+    <!-- 히어로 -->
+    <section class="hero">
+      <div>
+        <div class="brand">
+          <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 1.5l2.6 7.9 7.9 2.6-7.9 2.6L12 22.5l-2.6-7.9-7.9-2.6 7.9-2.6z"/></svg></div>
+          <div class="brand-name">Magic<span class="hl">Note</span></div>
+        </div>
+        <h1>긴 글도 부탁해!<br><span class="mark">AI 첨삭</span> + <span class="mark blue">나의 말투 리포트</span></h1>
+      </div>
+      <div class="why-side" style="display:flex;flex-direction:column;gap:13px;margin-top:4px;">
+        <div class="sec-label" style="display:inline-flex;align-items:center;gap:12px;align-self:flex-start;background:#1A1A1A;color:#FFF6E9;border-radius:999px;padding:8px 20px;font-size:14px;font-weight:800;letter-spacing:.16em;">WHY — 이런 고민 있나요?</div>
+        <div class="pain" style="background:#fff;border:3px solid #1A1A1A;border-radius:16px;padding:13px 17px;box-shadow:5px 5px 0 #1A1A1A;font-size:14.5px;line-height:1.5;font-weight:600;transform:rotate(-.8deg);"><b style="color:#E0447A;font-weight:900;">제출 직전</b>, 긴 글 속 오타를 다 찾기 어려운 순간</div>
+        <div class="pain" style="background:#fff;border:3px solid #1A1A1A;border-radius:16px;padding:13px 17px;box-shadow:5px 5px 0 #1A1A1A;font-size:14.5px;line-height:1.5;font-weight:600;transform:rotate(.7deg);"><b style="color:#2563EB;font-weight:900;">뭘 고쳤는지</b> 알려주지 않는 막연한 자동 교정은 아쉽다</div>
+        <div class="pain" style="background:#fff;border:3px solid #1A1A1A;border-radius:16px;padding:13px 17px;box-shadow:5px 5px 0 #1A1A1A;font-size:14.5px;line-height:1.5;font-weight:600;transform:rotate(-.5deg);"><b style="color:#1FA05A;font-weight:900;">나의 글 습관</b>은 그대로 — 매번 같은 실수를 반복한다</div>
+      </div>
+    </section>
+
+    <div class="deco-bubble bubble-a">…맞춤법 검사만으로는 부족해!</div>
+    <div class="deco-bubble bubble-b">교정 근거까지 딱! ✓</div>
+
+    <!-- 두 패널 : 긴글 첨삭 / 리포트 -->
+    <section class="duo">
+      <!-- ─────────── 긴글 첨삭 ─────────── -->
+      <article class="panel">
+        <div class="panel-head pink">
+          <div class="panel-icon">✎</div>
+          <div>
+            <div class="panel-title">긴 글 첨삭</div>
+            <div class="panel-tag">Long-form Polish</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <p class="panel-desc">편지·논문·과제·블로그 — 문서 유형을 고르고 긴 글을 통째로 넣으면, AI가 어색한 문장까지 찾아 다듬어요.</p>
+
+          <div class="chip-row">
+            <span class="chip c1">편지</span><span class="chip c2">논문</span><span class="chip c3">과제</span><span class="chip c4">블로그</span>
+          </div>
+
+          <div class="doc-mock">
+            <span class="mini-label">내 원고 · 첨삭 중…</span>
+            <div class="line"></div>
+            <div class="line err"></div>
+            <div class="line"></div>
+            <div class="line err" style="--l:70%;width:55%"></div>
+            <div class="line" style="width:82%"></div>
+          </div>
+
+          <div class="fix-card">
+            <div class="fix-num">1</div>
+            <div class="fix-text"><span class="strike">뭐해폈어</span> → <span class="ins">뭐 하셨어요?</span><small><span class="fix-badge">근거</span>존댓말 문서에서는 주어와 조사를 정확히 써야 해요</small></div>
+          </div>
+          <div class="fix-card">
+            <div class="fix-num">2</div>
+            <div class="fix-text"><span class="strike">안된거 같습니다</span> → <span class="ins">안 된 것 같습니다</span><small><span class="fix-badge">근거</span>'되다'는 사이시옷 없이 붙여 쓰는 것이 표준입니다</small></div>
+          </div>
+
+          <div class="steps">
+            <div class="step"><span class="step-num sn1">1</span>문서 유형 선택<b>편지 · 논문 · 과제 · 블로그</b></div>
+            <div class="step"><span class="step-num sn2">2</span>긴 글 붙여넣기<b>분량 제약 없이 통째로</b></div>
+            <div class="step"><span class="step-num sn3">3</span>AI 첨삭<b>다듬은 결과 + 클릭 복사</b></div>
+            <div class="step"><span class="step-num sn4">4</span>결과 보기<b>틀린 부분 · 근거 · 원본 연결선</b></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ─────────── 리포트 ─────────── -->
+      <article class="panel">
+        <div class="panel-head navy">
+          <div class="panel-icon">📊</div>
+          <div>
+            <div class="panel-title">나의 말투 리포트</div>
+            <div class="panel-tag">My Style Report</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <p class="panel-desc">첨삭할 때마다 쌓이는 교정 기록으로, 내가 자주 저지르는 실수와 말투 습관을 분석해 드려요.</p>
+
+          <div class="stats">
+            <div class="stat"><div class="v">128</div><div class="k">검토한 글</div></div>
+            <div class="stat"><div class="v">342</div><div class="k">누적 교정</div></div>
+            <div class="stat warn"><div class="v small">문장 성분 호응</div><div class="k">가장 잦은 실수</div></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span class="mini-label">자주 틀리는 어법 TOP 3</span>
+            <div class="mistake"><span class="rank r1">1</span><span class="t">문장 성분 호응 오류</span><span class="cnt">×47</span></div>
+            <div class="mistake"><span class="rank r2">2</span><span class="t">붙여 쓰기 · 띄어 쓰기</span><span class="cnt">×31</span></div>
+            <div class="mistake"><span class="rank r3">3</span><span class="t">외래어 표기 불일치</span><span class="cnt">×18</span></div>
+          </div>
+
+          <div class="chip-row">
+            <span class="mini-label" style="align-self:center;">내 말투 습관</span>
+            <span class="chip c2">~것 같다 남발</span><span class="chip c3">짧은 문장 선호</span><span class="chip c1">조사 생략 습관</span><span class="chip c4">하오체 혼용</span>
+          </div>
+
+          <div class="suggest">
+            <div><i></i>"~라고 생각합니다"처럼 확신 있는 표현으로 바꿔 보세요</div>
+            <div><i></i>요청 문서에는 결론을 문두에 배치하면 읽기 편해요</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <div class="foot-left"><span>Unithon Team 13</span> 고친 것만 끝이 아니라, 왜 틀렸는지 근거까지 — 반복될수록 내 글이 좋아집니다</div>
+      <div class="stack"><span>Swift</span><span>Python</span><span>Gemini API</span><span>Supabase</span></div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

@@ -185,3 +185,25 @@ POST /api/mirror
 ```
 
 직접 입력 Mirror는 `session_id`, `candidate_id` 없이 보내면 된다.
+
+## 클라우드 배포 (Railway + Docker)
+
+저장소 루트의 `Dockerfile`과 `railway.json`으로 배포한다. 시크릿은 이미지에 넣지 않고 Railway 환경변수로 주입한다.
+
+1. Railway에서 New Project → Deploy from GitHub repo 선택 (루트 디렉터리 기준, Dockerfile 자동 인식)
+2. Variables에 등록:
+   - `GEMINI_API_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - (선택) `GEMINI_MODEL`
+3. Settings → Networking → Generate Domain으로 공개 주소 확보 (`https://xxx.up.railway.app`)
+4. Supabase 스키마는 사전에 적용되어 있어야 한다 (`supabase_schema.sql` + migrations)
+
+### 앱을 클라우드 서버에 연결
+
+```bash
+defaults write com.unithon.team13.MagicNote apiBaseURL https://xxx.up.railway.app
+```
+
+`apiBaseURL`이 localhost가 아니면 앱은 로컬 Python 서버를 띄우지 않는다(ServerManager가 원격 모드로 동작). 지우려면 `defaults delete com.unithon.team13.MagicNote apiBaseURL`.
+
