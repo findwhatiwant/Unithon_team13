@@ -1,0 +1,153 @@
+/* ==========================================================
+   HomeScreen — standalone styles
+   ACCENT = #41456b
+   ========================================================== */
+
+.divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 0 -16px;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.home-header {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(140deg, #b05a5b, #41456b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(176, 90, 91, 0.35);
+}
+
+.home-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.82);
+  letter-spacing: -0.01em;
+}
+
+/* ── Hero (blocked-message quick entry) ───────────────────── */
+
+.home-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 46px 20px 0;
+  gap: 26px;
+}
+
+.home-question {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  text-align: center;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+  margin-top: 40px;
+}
+
+.mood-btn {
+  padding: 7px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.15s ease;
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(176, 90, 91, 0.35);
+  color: #b05a5b;
+}
+.mood-btn:hover {
+  background: rgba(176, 90, 91, 0.1);
+}
+
+.home-input-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 6px 6px 6px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) inset;
+}
+
+.home-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-family: 'Pretendard', sans-serif;
+  color: rgba(0, 0, 0, 0.75);
+}
+.home-input::placeholder {
+  color: rgba(0, 0, 0, 0.32);
+}
+
+.home-send-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #41456b 0%, #2c2f52 100%);
+  box-shadow: 0 2px 8px rgba(65, 69, 107, 0.4);
+  transition: opacity 0.15s;
+}
+.home-send-btn:hover {
+  opacity: 0.85;
+}
+.home-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+
+.home-footer {
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.footer-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.footer-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
