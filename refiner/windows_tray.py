@@ -11,7 +11,7 @@ import webbrowser
 from pathlib import Path
 from tkinter import messagebox
 from typing import Any, Callable
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 import requests
 from PIL import Image, ImageDraw, ImageTk
@@ -28,12 +28,18 @@ DEFAULT_API_BASE_URL = f"http://{DEFAULT_API_HOST}:{DEFAULT_API_PORT}"
 REQUIRED_API_PATHS = frozenset({"/api/users", "/api/compose", "/api/mirror", "/api/long-review"})
 WINDOW_WIDTH = 360
 WINDOW_HEIGHT = 520
+WEB_TRAY_WINDOW_WIDTH = 380
+WEB_TRAY_WINDOW_HEIGHT = 590
+DOCUMENT_WINDOW_WIDTH = 680
+DOCUMENT_WINDOW_HEIGHT = 500
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIST_DIR = PROJECT_ROOT / "dist"
 FRONTEND_INDEX_PATH = FRONTEND_DIST_DIR / "index.html"
 FRONTEND_SOURCE_PATHS = (
     PROJECT_ROOT / "App.tsx",
     PROJECT_ROOT / "index.css",
+    PROJECT_ROOT / "PlanReportModal.tsx",
+    PROJECT_ROOT / "PlanReportModal.css",
     PROJECT_ROOT / "index.html",
     PROJECT_ROOT / "package.json",
     PROJECT_ROOT / "src" / "main.tsx",
@@ -158,6 +164,9 @@ class BackendProcess:
         if self._is_compatible():
             return
 
+        if self._use_running_compatible_server():
+            return
+
         port = self._preferred_port()
         if not self._can_start_on_port(DEFAULT_API_HOST, port):
             port = self._find_free_port(port + 1)
@@ -179,6 +188,16 @@ class BackendProcess:
             return self.api.has_tray_api()
         except Exception:
             return False
+
+    def _use_running_compatible_server(self) -> bool:
+        original_base_url = self.api.base_url
+        start_port = DEFAULT_API_PORT
+        for port in range(start_port, start_port + 50):
+            self.api.set_base_url(f"http://{DEFAULT_API_HOST}:{port}")
+            if self._is_compatible():
+                return True
+        self.api.set_base_url(original_base_url)
+        return False
 
     def _start(self, port: int) -> None:
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -2131,13 +2150,26 @@ class FeedTrayApp:
 
 
 class WebTrayApp:
-    def __init__(self):
+    def __init__(
+        self,
+        surface: str = "tray",
+        width: int = WEB_TRAY_WINDOW_WIDTH,
+        height: int = WEB_TRAY_WINDOW_HEIGHT,
+        position: str = "bottom-right",
+        auto_open: bool = True,
+    ):
         load_env()
         base_url = os.environ.get("REFINER_API_BASE_URL", DEFAULT_API_BASE_URL)
         self.api = APIClient(base_url)
         self.backend = BackendProcess(self.api)
         self.icon: Icon | None = None
         self.web_process: subprocess.Popen[str] | None = None
+        self.surface = surface
+        self.window_width = width
+        self.window_height = height
+        self.window_position_mode = position
+        self.auto_open = auto_open
+        self.profile_name = f"browser-profile-{surface}-{width}x{height}"
         self._startup_done = threading.Event()
         self._startup_error: str | None = None
         self._open_lock = threading.Lock()
@@ -2167,7 +2199,7 @@ class WebTrayApp:
         finally:
             self._startup_done.set()
 
-        if not self._startup_error:
+        if not self._startup_error and self.auto_open:
             self.show_window()
 
     def _show_window_worker(self) -> None:
@@ -2225,23 +2257,26 @@ class WebTrayApp:
             return
 
         browser = self._find_browser_executable()
-        url = f"{self.api.base_url}/"
+        cache_key = str(int(FRONTEND_INDEX_PATH.stat().st_mtime)) if FRONTEND_INDEX_PATH.is_file() else str(int(time.time()))
+        url = f"{self.api.base_url}/?{urlencode({'surface': self.surface, 'api': self.api.base_url, 'v': cache_key})}"
         if not browser:
             webbrowser.open(url, new=1)
             return
 
         x, y = self._window_position()
-        profile_dir = SettingsStore().path.parent / "browser-profile"
+        profile_dir = SettingsStore().path.parent / self.profile_name
         profile_dir.mkdir(parents=True, exist_ok=True)
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         self.web_process = subprocess.Popen(
             [
                 str(browser),
+                "--new-window",
                 f"--app={url}",
-                f"--window-size={WINDOW_WIDTH},{WINDOW_HEIGHT}",
+                f"--window-size={self.window_width},{self.window_height}",
                 f"--window-position={x},{y}",
                 f"--user-data-dir={profile_dir}",
                 "--no-first-run",
+                "--no-default-browser-check",
                 "--disable-extensions",
             ],
             stdout=subprocess.DEVNULL,
@@ -2293,13 +2328,19 @@ class WebTrayApp:
                 return candidate
         return None
 
-    @staticmethod
-    def _window_position() -> tuple[int, int]:
+    def _window_position(self) -> tuple[int, int]:
         work_area = TrayApp._get_windows_work_area()
         if work_area:
             left, top, right, bottom = work_area
-            return max(left + 16, right - WINDOW_WIDTH - 16), max(top + 16, bottom - WINDOW_HEIGHT - 16)
+            if self.window_position_mode == "center":
+                return (
+                    max(left + 16, left + ((right - left) - self.window_width) // 2),
+                    max(top + 16, top + ((bottom - top) - self.window_height) // 2),
+                )
+            return max(left + 16, right - self.window_width - 16), max(top + 16, bottom - self.window_height - 16)
 
+        if self.window_position_mode == "center":
+            return 80, 60
         return 20, 20
 
     @staticmethod
@@ -2340,7 +2381,43 @@ class WebTrayApp:
         self.icon.run()
 
 
+class WebDocumentApp(WebTrayApp):
+    def __init__(self):
+        super().__init__(
+            surface="document",
+            width=DOCUMENT_WINDOW_WIDTH,
+            height=DOCUMENT_WINDOW_HEIGHT,
+            position="center",
+            auto_open=False,
+        )
+
+    def run(self) -> None:
+        self._startup()
+        if self._startup_error:
+            self._show_error(self._startup_error)
+            return
+
+        with self._open_lock:
+            self._open_web_window()
+
+        try:
+            while self.web_process is None or self.web_process.poll() is None:
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.quit()
+
+
+def document_main() -> None:
+    WebDocumentApp().run()
+
+
 def main() -> None:
+    if "--document" in sys.argv or os.environ.get("REFINER_SURFACE") == "document":
+        document_main()
+        return
+
     if os.environ.get("REFINER_USE_TK_UI") == "1":
         app = FeedTrayApp()
     else:

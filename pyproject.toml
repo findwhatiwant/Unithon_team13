@@ -21,6 +21,7 @@ dev = [
 refine = "refiner.cli:main"
 refiner-api = "refiner.server:main"
 refiner-tray = "refiner.windows_tray:main"
+refiner-document = "refiner.windows_tray:document_main"
 
 [build-system]
 requires = ["setuptools>=68"]

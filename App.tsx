@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PlanReportModal } from "./PlanReportModal";
 
 type Step =
   | "idle"
@@ -12,6 +13,7 @@ type Step =
   | "longDone";
 
 type Mode = "review" | "blocked" | "longform";
+type Surface = "tray" | "document";
 type Purpose = "사과" | "거절" | "요청" | "피드백";
 type DocumentType = "논문" | "메일" | "편지" | "블로그" | "기타";
 
@@ -72,6 +74,7 @@ type StyleAnalyzeResponse = {
 };
 
 const FALLBACK_API_CANDIDATES = ["http://127.0.0.1:8001", "http://127.0.0.1:8000"];
+const REQUIRED_API_PATHS = ["/api/users", "/api/compose", "/api/mirror", "/api/long-review"];
 const AUTH_STORAGE_KEY = "magic_note_auth_user";
 const ANONYMOUS_USER_STORAGE_KEY = "magic_note_user_id";
 const SAVE_HISTORY_STORAGE_KEY = "magic_note_save_history";
@@ -79,6 +82,10 @@ const PURPOSES: Purpose[] = ["사과", "거절", "요청", "피드백"];
 const DOCUMENT_TYPES: DocumentType[] = ["논문", "메일", "편지", "블로그", "기타"];
 const TONE_STYLES = ["정중하게", "부드럽게", "친근하게", "아련하게"];
 const DRAFT_LABELS = ["기본형", "부드럽게", "명확하게"];
+
+function initialSurface(): Surface {
+  return new URLSearchParams(window.location.search).get("surface") === "document" ? "document" : "tray";
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="section-label">{children}</p>;
@@ -415,6 +422,128 @@ function LongReviewCard({
   );
 }
 
+function highlightedLongText(text: string, count: number) {
+  const targetCount = Math.min(Math.max(count, 1), 3);
+  const parts = text.match(/[^\n.!?]+[.!?]?|\n+/g) ?? [text];
+  const contentIndexes = parts
+    .map((part, index) => ({ part, index }))
+    .filter(item => item.part.trim().length > 0)
+    .map(item => item.index);
+
+  if (contentIndexes.length < targetCount) {
+    const tokenParts = text.match(/\S+|\s+/g) ?? [text];
+    const tokenIndexes = tokenParts
+      .map((part, index) => ({ part, index }))
+      .filter(item => item.part.trim().length > 0)
+      .map(item => item.index);
+    const tokenHighlightCount = Math.min(targetCount, tokenIndexes.length);
+    const tokenHighlighted = new Set<number>();
+
+    for (let i = 0; i < tokenHighlightCount; i += 1) {
+      const position =
+        tokenHighlightCount === 1 ? 0 : Math.round((i * (tokenIndexes.length - 1)) / (tokenHighlightCount - 1));
+      tokenHighlighted.add(tokenIndexes[position]);
+    }
+
+    return tokenParts.map((part, index) => ({ text: part, highlighted: tokenHighlighted.has(index) }));
+  }
+
+  const highlightCount = Math.min(targetCount, contentIndexes.length);
+  const highlighted = new Set<number>();
+
+  for (let i = 0; i < highlightCount; i += 1) {
+    const position = highlightCount === 1 ? 0 : Math.round((i * (contentIndexes.length - 1)) / (highlightCount - 1));
+    highlighted.add(contentIndexes[position]);
+  }
+
+  return parts.map((part, index) => ({ text: part, highlighted: highlighted.has(index) }));
+}
+
+function LongReviewComparison({
+  data,
+  originalText,
+  documentType,
+  onCopyEdited,
+  onCopySummary,
+}: {
+  data: LongReviewResponse;
+  originalText: string;
+  documentType: DocumentType;
+  onCopyEdited: () => void;
+  onCopySummary: () => void;
+}) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const changes = (data.changes.length ? data.changes : data.key_points).slice(0, 3);
+  const displayedText = showOriginal ? originalText : data.edited_text;
+  const segments = highlightedLongText(displayedText, changes.length || 1);
+
+  return (
+    <div className="document-result-grid">
+      <section className="document-left-panel">
+        <div className="document-section-head">
+          <div>
+            <p className="document-kicker">다듬은 결과</p>
+            <h2>{documentType}</h2>
+          </div>
+          <button type="button" className="doc-ghost-btn" onClick={() => setShowOriginal(value => !value)}>
+            {showOriginal ? "첨삭본 보기" : "원본 보기"}
+          </button>
+        </div>
+
+        <article className="doc-paper">
+          {segments.map((segment, index) => (
+            <span key={`${segment.text}-${index}`} className={segment.highlighted ? "doc-marked-text" : undefined}>
+              {segment.text}
+            </span>
+          ))}
+        </article>
+
+        <button type="button" className="doc-primary-btn" onClick={onCopyEdited}>
+          복사하기
+        </button>
+      </section>
+
+      <aside className="document-right-panel">
+        <div className="report-panel-head">
+          <div>
+            <p className="document-kicker">교정 리포트</p>
+            <h2>틀린 부분과 근거</h2>
+          </div>
+          <span>{changes.length || 1}개 항목</span>
+        </div>
+
+        <div className="doc-report-list">
+          {(changes.length ? changes : ["글의 흐름과 목적에 맞춰 표현을 다듬었습니다."]).map((change, index) => (
+            <div className="doc-report-item" key={`${change}-${index}`}>
+              <span className="doc-report-num">{index + 1}</span>
+              <div>
+                <h3>{change}</h3>
+                <p>
+                  {index === 0 && data.ai_reason
+                    ? data.ai_reason
+                    : data.key_points[index]
+                      ? `핵심 내용인 "${data.key_points[index]}"이 더 또렷하게 보이도록 문장 구조를 정리했어요.`
+                      : "글 유형과 독자를 기준으로 어색한 연결과 표현을 자연스럽게 맞췄어요."}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="doc-summary-box">
+          <div>
+            <p className="document-kicker">자동 요약</p>
+            <p>{data.summary_text}</p>
+          </div>
+          <button type="button" className="doc-summary-copy" onClick={onCopySummary}>
+            요약 복사
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 function Composer({
   mode,
   onModeChange,
@@ -426,6 +555,7 @@ function Composer({
   onChange,
   onSend,
   disabled,
+  allowLongform = true,
 }: {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
@@ -437,6 +567,7 @@ function Composer({
   onChange: (v: string) => void;
   onSend: () => void;
   disabled: boolean;
+  allowLongform?: boolean;
 }) {
   const placeholder =
     mode === "blocked"
@@ -456,14 +587,16 @@ function Composer({
         >
           막혔어요
         </button>
-        <button
-          type="button"
-          className={`mood-btn long-mode-btn ${mode === "longform" ? "long-mode-btn-active" : ""}`}
-          onClick={() => onModeChange(mode === "longform" ? "review" : "longform")}
-          disabled={disabled}
-        >
-          긴글 첨삭
-        </button>
+        {allowLongform && (
+          <button
+            type="button"
+            className={`mood-btn long-mode-btn ${mode === "longform" ? "long-mode-btn-active" : ""}`}
+            onClick={() => onModeChange(mode === "longform" ? "review" : "longform")}
+            disabled={disabled}
+          >
+            긴글 첨삭
+          </button>
+        )}
       </div>
 
       {mode === "blocked" && (
@@ -531,11 +664,17 @@ function Composer({
 }
 
 async function requestJson<T>(baseUrl: string, path: string, payload?: unknown): Promise<T> {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: payload ? "POST" : "GET",
-    headers: payload ? { "Content-Type": "application/json" } : undefined,
-    body: payload ? JSON.stringify(payload) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      method: payload ? "POST" : "GET",
+      headers: payload ? { "Content-Type": "application/json" } : undefined,
+      body: payload ? JSON.stringify(payload) : undefined,
+    });
+  } catch {
+    throw new Error("백엔드 서버에 연결하지 못했어요. 앱을 닫고 다시 실행해 주세요.");
+  }
+
   if (!response.ok) {
     const text = await response.text();
     let message = text || `${response.status} ${response.statusText}`;
@@ -550,16 +689,23 @@ async function requestJson<T>(baseUrl: string, path: string, payload?: unknown):
   return (await response.json()) as T;
 }
 
+async function isCompatibleApiBase(baseUrl: string): Promise<boolean> {
+  const spec = await requestJson<{ paths?: Record<string, unknown> }>(baseUrl, "/openapi.json");
+  if (!spec.paths) return false;
+  return REQUIRED_API_PATHS.every(path => Object.prototype.hasOwnProperty.call(spec.paths, path));
+}
+
 async function discoverApiBase(): Promise<string> {
+  const queryApiBase = new URLSearchParams(window.location.search).get("api");
   const sameOrigin = window.location.origin;
-  const candidates = [sameOrigin, ...FALLBACK_API_CANDIDATES].filter(
-    (base, index, list) => list.indexOf(base) === index,
-  );
+  const candidates = [queryApiBase, sameOrigin, ...FALLBACK_API_CANDIDATES]
+    .filter((base): base is string => Boolean(base))
+    .map(base => base.replace(/\/$/, ""))
+    .filter((base, index, list) => list.indexOf(base) === index);
 
   for (const base of candidates) {
     try {
-      const health = await requestJson<{ ok: boolean }>(base, "/health");
-      if (health.ok) return base;
+      if (await isCompatibleApiBase(base)) return base;
     } catch {
       // Try the next local backend port.
     }
@@ -584,8 +730,11 @@ function readStoredAuthUser(): AuthUser | null {
 }
 
 export default function App() {
+  const surfaceRef = useRef<Surface>(initialSurface());
+  const surface = surfaceRef.current;
+  const isDocumentSurface = surface === "document";
   const [step, setStep] = useState<Step>("idle");
-  const [mode, setMode] = useState<Mode>("review");
+  const [mode, setMode] = useState<Mode>(() => (isDocumentSurface ? "longform" : "review"));
   const [purpose, setPurpose] = useState<Purpose>("요청");
   const [documentType, setDocumentType] = useState<DocumentType>("메일");
   const [counterpart, setCounterpart] = useState("");
@@ -611,6 +760,7 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [styleBusy, setStyleBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const [inputValue, setInputValue] = useState("");
   const [sentText, setSentText] = useState("");
@@ -786,7 +936,7 @@ export default function App() {
   };
 
   const resetForNewMode = (nextMode: Mode) => {
-    setMode(nextMode);
+    setMode(isDocumentSurface ? "longform" : nextMode);
     setInputValue("");
     setErrorMessage(null);
   };
@@ -897,6 +1047,8 @@ export default function App() {
 
   const resetConversation = () => {
     setStep("idle");
+    setMode(isDocumentSurface ? "longform" : "review");
+    setInputValue("");
     setSentText("");
     setDrafts([]);
     setComposeSessionId(null);
@@ -928,6 +1080,136 @@ export default function App() {
         onSubmit={handleAuthSubmit}
       />
     ) : null;
+
+  if (isDocumentSurface) {
+    const documentBusy = step === "longReviewing";
+    const showResult = step === "longDone" && longReviewResult;
+    const canSubmitDocument = Boolean(apiBase && inputValue.trim() && step === "idle");
+    const visibleDocumentText = documentBusy ? sentText : inputValue;
+
+    return (
+      <div className="app-bg document-bg">
+        <main className="document-window">
+          <div className="document-titlebar">
+            <div className="traffic-lights" aria-hidden="true">
+              <span className="traffic-light traffic-red" />
+              <span className="traffic-light traffic-yellow" />
+              <span className="traffic-light traffic-green" />
+            </div>
+            <span className="document-titlebar-name">Magic Note</span>
+          </div>
+
+          <header className="document-header">
+            <div className="document-brand">
+              <div className="home-logo document-logo">
+                <svg width="18" height="18" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1.5L8.2 5.2H12L9 7.4L10.2 11.1L7 8.9L3.8 11.1L5 7.4L2 5.2H5.8L7 1.5Z" fill="white" opacity="0.95" />
+                </svg>
+              </div>
+              <h1>Magic Note</h1>
+            </div>
+
+            <div className="document-account">
+              {authUser?.email && <span>{authUser.email}</span>}
+              <button
+                type="button"
+                className={`account-btn ${authUser ? "account-btn-signed" : ""}`}
+                onClick={() => (authUser ? handleLogout() : setAccountPanelOpen(open => !open))}
+              >
+                {authUser ? "로그아웃" : "로그인"}
+              </button>
+              <button type="button" className="reset-btn" onClick={resetConversation} aria-label="새 글">
+                ◎
+              </button>
+            </div>
+          </header>
+
+          <nav className="document-type-tabs" aria-label="글 유형">
+            {DOCUMENT_TYPES.map(type => (
+              <button
+                type="button"
+                key={type}
+                className={`document-tab ${documentType === type ? "document-tab-active" : ""}`}
+                onClick={() => {
+                  setDocumentType(type);
+                  if (showResult) resetConversation();
+                }}
+                disabled={documentBusy}
+              >
+                {type}
+              </button>
+            ))}
+          </nav>
+
+          {accountPanel && <div className="document-account-panel">{accountPanel}</div>}
+
+          <section className="document-content">
+            {showResult ? (
+              <LongReviewComparison
+                data={longReviewResult}
+                originalText={sentText}
+                documentType={documentType}
+                onCopyEdited={() => navigator.clipboard.writeText(longReviewResult.edited_text).catch(() => {})}
+                onCopySummary={() => navigator.clipboard.writeText(longReviewResult.summary_text).catch(() => {})}
+              />
+            ) : (
+              <div className="document-editor-grid">
+                <section className="document-editor-panel">
+                  <div className="document-section-head">
+                    <div>
+                      <p className="document-kicker">원문 작성</p>
+                      <h2>{documentType}</h2>
+                    </div>
+                    <span className="document-word-count">{visibleDocumentText.trim().length}자</span>
+                  </div>
+
+                  <textarea
+                    className="document-editor-textarea"
+                    value={visibleDocumentText}
+                    onChange={e => setInputValue(e.target.value)}
+                    placeholder={`${documentType} 글을 붙여넣어 주세요`}
+                    disabled={documentBusy}
+                  />
+
+                  <div className="document-editor-actions">
+                    <button type="button" className="doc-primary-btn" onClick={handleSend} disabled={!canSubmitDocument}>
+                      {documentBusy ? "첨삭 중" : "첨삭 시작"}
+                    </button>
+                  </div>
+                </section>
+
+                <aside className="document-helper-panel">
+                  <div>
+                    <p className="document-kicker">첨삭 기준</p>
+                    <h2>표현, 구조, 요약</h2>
+                    <p>
+                      선택한 글 유형에 맞춰 어색한 표현과 문장 흐름을 다듬고, 핵심 내용을 짧게 정리합니다.
+                    </p>
+                  </div>
+                  <div className="document-rule-list">
+                    <span>문장 연결</span>
+                    <span>어투 정리</span>
+                    <span>핵심 요약</span>
+                  </div>
+                  {documentBusy && <LoadingRow label="긴 글을 첨삭하고 핵심을 요약 중이에요..." />}
+                  {errorMessage && <ErrorBanner message={errorMessage} />}
+                </aside>
+              </div>
+            )}
+          </section>
+
+          <button type="button" className="document-report-fab" onClick={() => setReportOpen(true)} aria-label="리포트 열기">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="5" y="3.5" width="12" height="15" rx="2" stroke="white" strokeWidth="1.8" />
+              <path d="M8 8h6M8 11h6M8 14h4" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          <PlanReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-bg">
@@ -1035,6 +1317,7 @@ export default function App() {
               onChange={setInputValue}
               onSend={handleSend}
               disabled={isComposerLocked}
+              allowLongform={false}
             />
           </div>
         </div>
