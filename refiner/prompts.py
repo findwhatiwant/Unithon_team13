@@ -11,7 +11,8 @@ SYSTEM_PROMPT = """너는 한국어 메시지 다듬기 전문가다. 사용자�
 _MODE_INSTRUCTIONS = {
     Mode.POLISH: (
         "맞춤법, 띄어쓰기, 오타를 교정하고 어색한 문장을 자연스럽게 다듬는다.\n"
-        "문체와 어투는 원문 그대로 유지한다."
+        "문체와 어투는 원문 그대로 유지한다. [사용자 말투]가 주어지면 교정은 하되 "
+        "그 사람의 고유한 말투를 최대한 살린다."
     ),
     Mode.TONE: (
         "메시지를 지정된 톤으로 변환한다. 내용은 유지하고 어투만 바꾼다."
@@ -34,6 +35,8 @@ def build_user_prompt(request: RefineRequest) -> str:
     parts = [f"[작업]\n{_MODE_INSTRUCTIONS[request.mode]}"]
     if request.mode is Mode.TONE:
         parts.append(f"[변환할 톤]\n{_TONE_LABELS[request.tone]}")
+    if request.style_profile:
+        parts.append(f"[사용자의 평소 말투]\n{request.style_profile}")
     if request.context:
         parts.append(f"[상황]\n{request.context}")
     parts.append(f"[원본 메시지]\n{request.text}")

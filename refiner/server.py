@@ -94,6 +94,36 @@ class RefineAPIRequest(BaseModel):
     save_history: bool = False
 
 
+class StyleAnalyzeRequest(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    min_messages: int = 3
+
+
+class StyleAnalyzeResponse(BaseModel):
+    user_id: str
+    analyzed_messages: int
+    style_profile: str
+
+
+class AuthSignUpRequest(BaseModel):
+    email: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=8)
+    nickname: str | None = None
+
+
+class AuthLoginRequest(BaseModel):
+    email: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=1)
+
+
+class AuthResponse(BaseModel):
+    user_id: str
+    email: str | None = None
+    nickname: str | None = None
+    access_token: str
+    refresh_token: str | None = None
+
+
 class RefineAPIResponse(BaseModel):
     session_id: str
     refined_text: str
@@ -113,6 +143,67 @@ def get_llm_client() -> LLMClient:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY가 없습니다.")
     model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash").strip()
     return GeminiClient(api_key=api_key, model=model)
+
+
+@app.post("/api/auth/signup", response_model=AuthResponse)
+def auth_sign_up(
+    request: AuthSignUpRequest,
+    store: SupabaseStore = Depends(get_store),
+) -> AuthResponse:
+    try:
+        data = store.sign_up(request.email.strip(), request.password)
+        user = data["user"]
+        user_id = user["id"]
+        row = store.upsert(
+            "user_profiles",
+            {
+                "id": user_id,
+                "email": request.email.strip(),
+                "nickname": request.nickname,
+                "provider": "email",
+            },
+            on_conflict="id",
+        )
+        return AuthResponse(
+            user_id=user_id,
+            email=row.get("email"),
+            nickname=row.get("nickname"),
+            access_token=data.get("access_token", ""),
+            refresh_token=data.get("refresh_token"),
+        )
+    except SupabaseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+def auth_login(
+    request: AuthLoginRequest,
+    store: SupabaseStore = Depends(get_store),
+) -> AuthResponse:
+    try:
+        data = store.sign_in_with_password(request.email.strip(), request.password)
+        user = data.get("user") or {}
+        user_id = user.get("id", "")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="로그인에 실패했습니다.")
+        # 프로필이 없으면 생성 (Supabase Auth로 만든 계정 보완)
+        try:
+            store.upsert(
+                "user_profiles",
+                {"id": user_id, "email": request.email.strip(), "provider": "email"},
+                on_conflict="id",
+            )
+        except SupabaseError:
+            pass
+        return AuthResponse(
+            user_id=user_id,
+            email=user.get("email"),
+            nickname=(user.get("user_metadata") or {}).get("nickname"),
+            access_token=data["access_token"],
+            refresh_token=data.get("refresh_token"),
+        )
+    except SupabaseError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
 @app.get("/health")
@@ -302,12 +393,14 @@ def refine(
     client: LLMClient = Depends(get_llm_client),
 ) -> RefineAPIResponse:
     try:
+        style_profile = _load_style_profile(store, request.user_id)
         result = Pipeline(client).run(
             RefineRequest(
                 text=request.text,
                 mode=request.mode,
                 tone=request.tone,
                 context=request.context,
+                style_profile=style_profile,
             )
         )
     except ValueError as exc:
@@ -332,6 +425,85 @@ def refine(
         refined_text=result.refined_text,
         changes=result.changes,
     )
+
+
+@app.post("/api/style/analyze", response_model=StyleAnalyzeResponse)
+def analyze_style(
+    request: StyleAnalyzeRequest,
+    store: SupabaseStore = Depends(get_store),
+    client: LLMClient = Depends(get_llm_client),
+) -> StyleAnalyzeResponse:
+    """사용자의 최근 원본 메시지들을 분석해 말투 프로필을 생성·저장한다."""
+    try:
+        rows = store.select(
+            "message_sessions",
+            filters={
+                "user_id": f"eq.{request.user_id}",
+                "original_text": "not.is.null",
+            },
+            order="created_at.desc",
+            limit=30,
+            columns="original_text",
+        )
+        texts = [str(row["original_text"]).strip() for row in rows if row.get("original_text")]
+        if len(texts) < request.min_messages:
+            raise HTTPException(
+                status_code=400,
+                detail=f"분석할 원본 메시지가 부족합니다 ({len(texts)}개, 최소 {request.min_messages}개 필요).",
+            )
+
+        profile = _generate_style_profile(client, texts[:20])
+        store.update(
+            "user_profiles",
+            {"style_profile": profile},
+            {"id": f"eq.{request.user_id}"},
+        )
+        return StyleAnalyzeResponse(
+            user_id=request.user_id,
+            analyzed_messages=len(texts[:20]),
+            style_profile=profile,
+        )
+    except HTTPException:
+        raise
+    except SupabaseError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+def _load_style_profile(store: SupabaseStore, user_id: str | None) -> str | None:
+    if not user_id:
+        return None
+    try:
+        rows = store.select(
+            "user_profiles",
+            filters={"id": f"eq.{user_id}", "style_profile": "not.is.null"},
+            limit=1,
+            columns="style_profile",
+        )
+    except SupabaseError:
+        return None
+    if rows and rows[0].get("style_profile"):
+        return str(rows[0]["style_profile"])
+    return None
+
+
+def _generate_style_profile(client: LLMClient, texts: list[str]) -> str:
+    system = """너는 한국어 메시지 말투 분석 전문가다.
+한 사람이 직접 쓴 메시지 여러 개를 보고 그 사람 고유의 말투를 객관적으로 요약한다.
+절대 내용을 판단하거나 교정하지 말고 어투만 분석한다.
+반드시 아래 JSON 형식으로만 응답한다.
+{"style_profile": "말투 특징 요약 (300자 이내, 다듬기 프롬프트에 그대로 쓸 수 있는 지시문 형태)"}
+
+style_profile에는 이런 항목을 포함한다:
+- 평소 어미/높임 습관 (~해요체, ~함체 등)
+- 자주 쓰는 표현, 감탄사, 이모지/ㅋㅋ 사용 패턴
+- 문장 길이와 구두점 습관
+- 전체적으로 부드러운지 직설적인지"""
+    joined = "\n---\n".join(f"{index + 1}. {text}" for index, text in enumerate(texts))
+    data = _parse_json(client.generate(system, f"[분석할 메시지들]\n{joined}"))
+    profile = str(data.get("style_profile", "")).strip()
+    if not profile:
+        raise ValueError("말투 분석 결과가 비어 있습니다.")
+    return profile
 
 
 def _generate_compose_candidates(client: LLMClient, request: ComposeRequest) -> list[dict[str, str]]:

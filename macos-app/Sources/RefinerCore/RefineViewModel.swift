@@ -20,8 +20,8 @@ public final class RefineViewModel: ObservableObject {
     private let service: RefiningService
 
     public init(service: RefiningService? = nil) {
-        self.service = service ?? GeminiClient(apiKey: APIKeyStore.savedKey ?? "")
-        self.hasAPIKey = APIKeyStore.savedKey != nil
+        self.service = service ?? APIRefineService()
+        self.hasAPIKey = AuthStore.isLoggedIn || APIKeyStore.savedKey != nil
     }
 
     public func refine() async {

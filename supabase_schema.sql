@@ -5,6 +5,7 @@ create table if not exists user_profiles (
   email text,
   nickname text,
   provider text not null default 'anonymous',
+  style_profile text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
