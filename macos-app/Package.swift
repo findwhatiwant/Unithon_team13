@@ -11,7 +11,10 @@ let package = Package(
         .target(name: "RefinerCore"),
         .executableTarget(
             name: "MenuBarApp",
-            dependencies: ["RefinerCore"]
+            dependencies: ["RefinerCore"],
+            resources: [
+                .copy("Resources/Fonts")
+            ]
         ),
         .executableTarget(
             name: "RefinerTests",

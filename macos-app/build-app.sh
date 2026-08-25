@@ -11,6 +11,10 @@ rm -rf "dist/$APP_NAME.app"
 mkdir -p "dist/$APP_NAME.app/Contents/MacOS"
 mv /tmp/"$BIN_NAME" "dist/$APP_NAME.app/Contents/MacOS/$BIN_NAME"
 
+# SwiftPM 리소스 번들(임베드 폰트 등)을 .app에 포함
+mkdir -p "dist/$APP_NAME.app/Contents/Resources"
+cp -R ".build/release/${APP_NAME}_MenuBarApp.bundle" "dist/$APP_NAME.app/Contents/Resources/"
+
 cat > "dist/$APP_NAME.app/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -33,7 +37,7 @@ cat > "dist/$APP_NAME.app/Contents/Info.plist" <<'EOF'
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
 </dict>
 </plist>
 EOF
