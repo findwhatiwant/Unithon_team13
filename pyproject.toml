@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "LLM 기반 메시지 다듬기 AI 파이프라인"
 requires-python = ">=3.10"
 dependencies = [
+    "fastapi>=0.115",
     "google-genai>=1.0",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -14,6 +16,7 @@ dev = [
 
 [project.scripts]
 refine = "refiner.cli:main"
+refiner-api = "refiner.server:main"
 
 [build-system]
 requires = ["setuptools>=68"]

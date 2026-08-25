@@ -79,3 +79,109 @@ API 실패 시 예외 대신 `RefineResult(success=False, error=...)`를 반환�
 ```bash
 .venv/bin/pytest -q
 ```
+
+## 백엔드 서버 + Supabase
+
+현재 MVP 백엔드는 2A/2B 흐름을 우선 지원한다.
+
+- 2A: Quick Compose 후보 생성 후 선택한 문장을 Mirror로 분석
+- 2B: 사용자가 직접 쓴 문장을 Mirror로 분석
+- 3번 Coach 기능은 나중에 확장할 수 있도록 기록만 저장
+
+### 1. Supabase 테이블 만들기
+
+Supabase 프로젝트를 만든 뒤 SQL Editor에 `supabase_schema.sql` 내용을 그대로 붙여 넣고 실행한다.
+
+생성되는 주요 테이블:
+
+- `user_profiles`: 사용자 기본 정보
+- `user_consents`: 기록 저장/Coach 사용 동의 정보
+- `message_sessions`: 한 번의 작성/분석 작업 기록
+- `compose_candidates`: Quick Compose 후보 문장
+- `mirror_analyses`: Mirror 분석 결과
+
+### 2. 환경변수 설정
+
+```bash
+cp .env.example .env
+```
+
+`.env`에 아래 값을 채운다.
+
+```bash
+GEMINI_API_KEY=...
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+주의: `SUPABASE_SERVICE_ROLE_KEY`는 프론트에 절대 넣지 않는다. 백엔드 서버에서만 사용한다.
+
+개인정보 보호를 위해 `save_history`가 `false`이면 사용자가 입력한 원문, 상황, 후보 문장, Mirror 분석 문구는 DB에 저장하지 않고 최소 작업 기록만 남긴다.
+
+### 3. 서버 실행
+
+```bash
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/refiner-api
+```
+
+Windows PowerShell에서는 보통 아래처럼 실행한다.
+
+```powershell
+.\.venv\Scripts\pip.exe install -e ".[dev]"
+.\.venv\Scripts\refiner-api.exe
+```
+
+서버 주소:
+
+```txt
+http://127.0.0.1:8000
+```
+
+상태 확인:
+
+```txt
+GET /health
+```
+
+### 4. 프론트가 호출할 API
+
+Quick Compose:
+
+```txt
+POST /api/compose
+```
+
+요청 예시:
+
+```json
+{
+  "user_id": "사용자 ID",
+  "recipient": "동아리 팀원",
+  "context": "내일 회의 시간을 바꿔야 함",
+  "purpose": "부탁",
+  "tone": "부드럽게",
+  "save_history": true
+}
+```
+
+Mirror:
+
+```txt
+POST /api/mirror
+```
+
+요청 예시:
+
+```json
+{
+  "user_id": "사용자 ID",
+  "session_id": "Compose에서 받은 session_id",
+  "candidate_id": "선택한 후보 ID",
+  "text": "혹시 내일 회의 시간 바꿀 수 있을까요?",
+  "source_type": "quick_compose_candidate",
+  "save_history": true
+}
+```
+
+직접 입력 Mirror는 `session_id`, `candidate_id` 없이 보내면 된다.
