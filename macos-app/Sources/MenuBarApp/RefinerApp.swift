@@ -7,14 +7,14 @@ struct RefinerApp: App {
 
     var body: some Scene {
         // 응용 프로그램에서 직접 실행하면 중앙에 표시되는 로그인 창
-        WindowGroup("로그인") {
-            LoginView()
+        WindowGroup {
+            RootView()
         }
         .windowResizability(.contentSize)
 
         // 메뉴바 상주 아이콘
         MenuBarExtra {
-            PopoverView(viewModel: RefineViewModel())
+            PopoverView()
         } label: {
             Image(systemName: "wand.and.stars")
         }

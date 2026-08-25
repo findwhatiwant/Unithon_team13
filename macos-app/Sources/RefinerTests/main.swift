@@ -98,7 +98,7 @@ func promptsTests() {
 
     let tone = Prompts.buildUserPrompt(RefineRequest(text: "hello", mode: .tone, tone: .business))
     check("톤 라벨 포함", tone.contains("비즈니스"))
-    check("어투 변환 지시 포함", tone.contains("어투만 바꾼다"))
+    check("어투 변환 지시 포함", tone.contains("어투와 표현만 바꾼다"))
 
     let summarize = Prompts.buildUserPrompt(RefineRequest(text: "긴 글", mode: .summarize))
     check("요약 지시 포함", summarize.contains("간결하게 줄인다"))

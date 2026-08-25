@@ -61,6 +61,17 @@ public final class RefineViewModel: ObservableObject {
         apiKeyInput = ""
     }
 
+    /// 입력·결과·모드 선택을 모두 지우고 처음 화면 상태로 되돌린다.
+    public func resetToInitial() {
+        input = ""
+        contextInput = ""
+        mode = .polish
+        tone = nil
+        result = nil
+        errorMessage = nil
+        copied = false
+    }
+
     private func toneChanged() {
         if mode == .tone && tone == nil {
             tone = .formal

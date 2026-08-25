@@ -85,7 +85,7 @@ def test_tone_prompt_includes_tone_label():
 
     _, user = client.calls[0]
     assert "비즈니스" in user
-    assert "어투만 바꾼다" in user
+    assert "어투와 표현만 바꾼다" in user
 
 
 def test_context_passed_to_prompt():

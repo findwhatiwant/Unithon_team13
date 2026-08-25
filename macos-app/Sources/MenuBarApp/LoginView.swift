@@ -223,7 +223,6 @@ struct LoginView: View {
                     )
                 }
                 AuthStore.saveSession(response)
-                NSApp.hide(nil)
             } catch let error as AuthError {
                 errorMessage = error.message
             } catch {
