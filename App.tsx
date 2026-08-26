@@ -117,14 +117,9 @@ function ContextPanel({
   counterpart,
   selfDescription,
   toneStyle,
-  saveHistory,
-  signedIn,
   onCounterpartChange,
   onSelfDescriptionChange,
   onToneStyleChange,
-  onSaveHistoryChange,
-  onAnalyzeStyle,
-  styleBusy,
 }: {
   counterpart: string;
   selfDescription: string;
@@ -140,45 +135,51 @@ function ContextPanel({
 }) {
   return (
     <div className="context-panel">
-      <div className="context-input-row">
-        <input
-          className="context-input"
-          value={counterpart}
-          onChange={e => onCounterpartChange(e.target.value)}
-          placeholder="상대방"
-        />
-        <input
-          className="context-input"
-          value={selfDescription}
-          onChange={e => onSelfDescriptionChange(e.target.value)}
-          placeholder="나는"
-        />
-      </div>
-      <div className="tone-chip-row">
-        {TONE_STYLES.map(style => (
-          <button
-            type="button"
-            key={style}
-            className={`tone-chip ${toneStyle === style ? "tone-chip-active" : ""}`}
-            onClick={() => onToneStyleChange(toneStyle === style ? null : style)}
-          >
-            {style}
-          </button>
-        ))}
-      </div>
-      <div className="profile-row">
-        <label className={`history-toggle ${!signedIn ? "history-toggle-disabled" : ""}`}>
+      <div className="context-input-row" aria-label="메시지 상황">
+        <label className="context-field">
+          <svg className="context-icon" width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+            <circle cx="6.5" cy="3.7" r="2.1" fill="currentColor" opacity="0.55" />
+            <path d="M2.3 11c.45-2.25 2-3.45 4.2-3.45s3.75 1.2 4.2 3.45" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
+          </svg>
           <input
-            type="checkbox"
-            checked={saveHistory}
-            onChange={e => onSaveHistoryChange(e.target.checked)}
-            disabled={!signedIn}
+            className="context-input"
+            value={counterpart}
+            onChange={e => onCounterpartChange(e.target.value)}
+            placeholder="상대방"
+            aria-label="상대방"
           />
-          <span>기록 저장</span>
         </label>
-        <button type="button" className="profile-btn" onClick={onAnalyzeStyle} disabled={!signedIn || styleBusy}>
-          {styleBusy ? "학습 중" : "내 말투 학습"}
-        </button>
+        <label className="context-field">
+          <svg className="context-icon" width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+            <circle cx="6.5" cy="3.7" r="2.1" fill="currentColor" opacity="0.55" />
+            <path d="M2.3 11c.45-2.25 2-3.45 4.2-3.45s3.75 1.2 4.2 3.45" fill="currentColor" opacity="0.55" />
+          </svg>
+          <input
+            className="context-input"
+            value={selfDescription}
+            onChange={e => onSelfDescriptionChange(e.target.value)}
+            placeholder="본인"
+            aria-label="본인"
+          />
+        </label>
+        <label className="tone-select-field">
+          <span className="tone-quote" aria-hidden="true">
+            “
+          </span>
+          <select
+            className="tone-select"
+            value={toneStyle ?? ""}
+            onChange={e => onToneStyleChange(e.target.value || null)}
+            aria-label="어투"
+          >
+            <option value="">어투</option>
+            {TONE_STYLES.map(style => (
+              <option key={style} value={style}>
+                {style}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
     </div>
   );
@@ -740,7 +741,7 @@ export default function App() {
   const [documentType, setDocumentType] = useState<DocumentType>("메일");
   const [counterpart, setCounterpart] = useState("");
   const [selfDescription, setSelfDescription] = useState("");
-  const [toneStyle, setToneStyle] = useState<string | null>("부드럽게");
+  const [toneStyle, setToneStyle] = useState<string | null>(null);
 
   const [apiBase, setApiBase] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => readStoredAuthUser());
@@ -800,13 +801,19 @@ export default function App() {
           return;
         }
 
-        const created = await requestJson<{ user_id: string }>(base, "/api/users", {
-          nickname: "react-user",
-          provider: "react_frontend",
-        });
+        let createdUserId: string;
+        try {
+          const created = await requestJson<{ user_id: string }>(base, "/api/users", {
+            nickname: "react-user",
+            provider: "react_frontend",
+          });
+          createdUserId = created.user_id;
+        } catch {
+          createdUserId = `local-${crypto.randomUUID()}`;
+        }
         if (cancelled) return;
-        localStorage.setItem(ANONYMOUS_USER_STORAGE_KEY, created.user_id);
-        setUserId(created.user_id);
+        localStorage.setItem(ANONYMOUS_USER_STORAGE_KEY, createdUserId);
+        setUserId(createdUserId);
       } catch (error) {
         if (!cancelled) setErrorMessage(error instanceof Error ? error.message : "서버 연결 실패");
       }
@@ -1212,9 +1219,25 @@ export default function App() {
     );
   }
 
+  const trayComposer = (
+    <Composer
+      mode={mode}
+      onModeChange={resetForNewMode}
+      purpose={purpose}
+      onPurposeChange={setPurpose}
+      documentType={documentType}
+      onDocumentTypeChange={setDocumentType}
+      value={inputValue}
+      onChange={setInputValue}
+      onSend={handleSend}
+      disabled={isComposerLocked}
+      allowLongform={false}
+    />
+  );
+
   return (
     <div className="app-bg">
-      <div className="app-frame">
+      <div className={`app-frame ${step === "idle" ? "app-frame-home" : ""}`}>
         <div className="app-frame-glow" />
         <div className="app-frame-notch" />
 
@@ -1226,16 +1249,18 @@ export default function App() {
               </svg>
             </div>
             <span className="home-title">Magic Note</span>
-            <button
-              type="button"
-              className={`account-btn ${authUser ? "account-btn-signed" : ""}`}
-              onClick={() => (authUser ? handleLogout() : setAccountPanelOpen(open => !open))}
-            >
-              {authUser ? "로그아웃" : "로그인"}
-            </button>
-            <button type="button" className="reset-btn" onClick={resetConversation} aria-label="새 메시지">
-              ◎
-            </button>
+            <div className="header-actions">
+              <button
+                type="button"
+                className={`account-btn ${authUser ? "account-btn-signed" : ""}`}
+                onClick={() => (authUser ? handleLogout() : setAccountPanelOpen(open => !open))}
+              >
+                {authUser ? "로그아웃" : "로그인"}
+              </button>
+              <button type="button" className="reset-btn" onClick={resetConversation} aria-label="새 메시지">
+                ◎
+              </button>
+            </div>
           </div>
 
           <div className="feed-scroll">
@@ -1255,8 +1280,28 @@ export default function App() {
                   onAnalyzeStyle={handleAnalyzeStyle}
                   styleBusy={styleBusy}
                 />
+                {trayComposer}
                 {accountPanel}
                 {errorMessage && <ErrorBanner message={errorMessage} />}
+                <div className="home-bottom-bar">
+                  <button
+                    type="button"
+                    className="home-settings-btn"
+                    onClick={() => setAccountPanelOpen(open => !open)}
+                    aria-label="설정"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                      <path
+                        d="M6.78 1.6h1.44l.33 1.45c.35.12.68.25.97.43l1.28-.78 1.02 1.02-.78 1.28c.18.3.33.62.43.97l1.45.33v1.44l-1.45.33c-.1.35-.25.68-.43.97l.78 1.28-1.02 1.02-1.28-.78c-.3.18-.62.32-.97.43l-.33 1.45H6.78l-.33-1.45a4.7 4.7 0 0 1-.97-.43l-1.28.78-1.02-1.02.78-1.28a4.7 4.7 0 0 1-.43-.97l-1.45-.33V6.3l1.45-.33c.1-.35.25-.68.43-.97l-.78-1.28L4.2 2.7l1.28.78c.3-.18.62-.32.97-.43l.33-1.45Z"
+                        stroke="currentColor"
+                        strokeWidth="1.1"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="7.5" cy="7.02" r="1.95" stroke="currentColor" strokeWidth="1.1" />
+                    </svg>
+                  </button>
+                  <span>Magic Note · Unithon Team13</span>
+                </div>
               </div>
             )}
 
@@ -1306,21 +1351,7 @@ export default function App() {
             <div ref={bottomRef} />
           </div>
 
-          <div className="feed-footer">
-            <Composer
-              mode={mode}
-              onModeChange={resetForNewMode}
-              purpose={purpose}
-              onPurposeChange={setPurpose}
-              documentType={documentType}
-              onDocumentTypeChange={setDocumentType}
-              value={inputValue}
-              onChange={setInputValue}
-              onSend={handleSend}
-              disabled={isComposerLocked}
-              allowLongform={false}
-            />
-          </div>
+          {step !== "idle" && <div className="feed-footer">{trayComposer}</div>}
         </div>
       </div>
     </div>
